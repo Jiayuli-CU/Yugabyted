@@ -5,9 +5,10 @@ import (
 	"cs5424project/store/postgre"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 var db = postgre.GetDB()
@@ -28,11 +29,11 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		if err := tx.Model(&models.Customer{}).
 			Where("id = ? AND warehouse_id = ? AND district_id = ?", customerId, warehouseId, districtId).
 			Find(&customer).Error; err != nil {
-			log.Printf("Find customer error: %v", err)
+			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
 		if customer.Balance < payment {
-			return errors.New(fmt.Sprintf("Not enough balance. Current balance is %v, need to pay %v", customer.Balance, payment))
+			return errors.New(fmt.Sprintf("Not enough balance. Current balance is %v, need to pay %v\n", customer.Balance, payment))
 		}
 		customer.Balance -= payment
 		customer.YearToDatePayment += payment
@@ -40,7 +41,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		if err := tx.Model(&models.Customer{}).
 			Where("id = ? AND warehouse_id = ? AND district_id = ?", customerId, warehouseId, districtId).
 			Updates(&customer).Error; err != nil {
-			log.Printf("Update customer error: %v", err)
+			log.Printf("Update customer error: %v\n", err)
 			return err
 		}
 
@@ -49,14 +50,14 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		if err := tx.Model(&models.Warehouse{}).
 			Where("id = ?", warehouseId).
 			Find(&warehouse).Error; err != nil {
-			log.Printf("Find warehouse error: %v", err)
+			log.Printf("Find warehouse error: %v\n", err)
 			return err
 		}
 		warehouse.YearToDateAmount += payment
 		if err := tx.Model(&models.Warehouse{}).
 			Where("id = ?", warehouseId).
 			Updates(&warehouse).Error; err != nil {
-			log.Printf("Update warehouse error: %v", err)
+			log.Printf("Update warehouse error: %v\n", err)
 			return err
 		}
 
@@ -65,26 +66,25 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		if err := tx.Model(&models.District{}).
 			Where("id = ? AND warehouse_id = ?", districtId, warehouseId).
 			Find(&district).Error; err != nil {
-			log.Printf("Find district error: %v", err)
+			log.Printf("Find district error: %v\n", err)
 			return err
 		}
 		district.Year2DateAmount += payment
 		if err := tx.Model(&models.District{}).
 			Where("id = ? AND warehouse_id = ?", districtId, warehouseId).
 			Updates(&district).Error; err != nil {
-			log.Printf("Update district error: %v", err)
+			log.Printf("Update district error: %v\n", err)
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		log.Printf("Payment transaction error: %v", err)
+		log.Printf("Payment transaction error: %v\n", err)
 	}
 }
 
 func DeliveryTransaction(warehouseId, carrierId uint64) {
 	err := db.Transaction(func(tx *gorm.DB) error {
-		// todo
 		// 1. For DISTRICT_NO = 1 to 10
 		// 		(a) Let N denote the value of the smallest order number O_ID for district (W_ID,DISTRICT_NO)
 		//			with O_CARRIER_ID = null; i.e.,
@@ -99,22 +99,22 @@ func DeliveryTransaction(warehouseId, carrierId uint64) {
 		//			• Increment C_DELIVERY_CNT by 1
 		var order models.Order
 		if err := tx.Model(&models.Order{}).Where("carrier_id = null").First(&order).Error; err != nil {
-			log.Printf("First order error: %v", err)
+			log.Printf("First order error: %v\n", err)
 			return err
 		}
 		var customer models.Customer
 		if err := tx.Model(&models.Customer{}).Where("id = ?", order.CustomerId).Find(&customer).Error; err != nil {
-			log.Printf("Find customer error: %v", err)
+			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
 		order.CarrierId = carrierId
 		if err := tx.Model(&models.Order{}).Where("id = ?", order.Id).Updates(&order).Error; err != nil {
-			log.Printf("Update order error: %v", err)
+			log.Printf("Update order error: %v\n", err)
 			return err
 		}
 		var orderLines []models.OrderLine
 		if err := tx.Model(&models.OrderLine{}).Where("order_id = ?", order.Id).Find(&orderLines).Error; err != nil {
-			log.Printf("Find order lines error: %v", err)
+			log.Printf("Find order lines error: %v\n", err)
 			return err
 		}
 		totalAmount := 0.0
@@ -122,30 +122,67 @@ func DeliveryTransaction(warehouseId, carrierId uint64) {
 			orderLine.DeliveryTime = time.Now()
 			totalAmount += orderLine.Price
 			if err := tx.Model(&models.OrderLine{}).Where("id = ?", orderLine.Id).Updates(&orderLine).Error; err != nil {
-				log.Printf("Update order line error: %v", err)
+				log.Printf("Update order line error: %v\n", err)
 				return err
 			}
 		}
 		customer.Balance += totalAmount
 		customer.DeliveriesNumber++
 		if err := tx.Model(&models.Customer{}).Where("id = ?", customer.Id).Updates(&customer).Error; err != nil {
-			log.Printf("Update customer error: %v", err)
+			log.Printf("Update customer error: %v\n", err)
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		log.Printf("Delivery transaction error: %v", err)
+		log.Printf("Delivery transaction error: %v\n", err)
 	}
 }
 
-func OrderStatusTransaction() {
+func OrderStatusTransaction(warehouseId, districtId, customerId uint64) {
+	var customer models.Customer
+	var order models.Order
+	var orderLines []models.OrderLine
 	err := db.Transaction(func(tx *gorm.DB) error {
-		// todo
+		if err := tx.Model(&models.Customer{}).
+			Where("id = ? AND warehouse_id = ? AND district_id = ?", customerId, warehouseId, districtId).
+			Find(&customer).Error; err != nil {
+			log.Printf("Find customer error: %v\n", err)
+			return err
+		}
+		if err := tx.Model(&models.Order{}).Where("customer_id = ?", customer.Id).Last(&order).Error; err != nil {
+			log.Printf("Last order error: %v\n", err)
+			return err
+		}
+		if err := tx.Model(&models.OrderLine{}).Where("order_id = ?", order.Id).Find(&orderLines).Error; err != nil {
+			log.Printf("Find order lines error: %v\n", err)
+			return err
+		}
 		return nil
 	})
 	if err != nil {
-		log.Printf("Order status transaction error: %v", err)
+		log.Printf("Order status transaction error: %v\n", err)
+		return
+	}
+	log.Printf("Customer info: first name = %v, middle name = %v, last name = %v, balance = %v\n",
+		customer.FirstName,
+		customer.MiddleName,
+		customer.LastName,
+		customer.Balance,
+	)
+	log.Printf("Customer last order info: order id = %v, entry time = %v, carrier id = %v",
+		order.Id,
+		order.EntryTime,
+		order.CarrierId,
+	)
+	for _, orderLine := range orderLines {
+		log.Printf("Customer order item info: order info = %v, warehouse id = %v, quantity ordered = %v, total price = %v, delivery time = %v\n",
+			orderLine.ItemId,
+			orderLine.WarehouseId,
+			orderLine.Quantity,
+			orderLine.Price,
+			orderLine.DeliveryTime,
+		)
 	}
 }
 
