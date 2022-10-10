@@ -4,6 +4,8 @@ go 1.17
 
 require github.com/gin-gonic/gin v1.8.1
 
+require github.com/shopspring/decimal v1.3.1 // indirect
+
 require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect

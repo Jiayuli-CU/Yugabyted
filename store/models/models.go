@@ -65,7 +65,7 @@ type Order struct {
 	CustomerId  uint64    `gorm:"type:int;column:customer_id;not null"`
 	CarrierId   uint64    `gorm:"type:int;column:carrier_id;not null"`
 	ItemsNumber uint64    `gorm:"type:int;column:items_number;not null"`
-	Status      float64   `gorm:"type:decimal(1,0);column:status;not null"`
+	Status      bool      `gorm:"type:decimal(1,0);column:status;not null"`
 	EntryTime   time.Time `gorm:"type:timestamp;column:entry_time;not null"`
 }
 
@@ -90,7 +90,7 @@ type OrderLine struct {
 	DeliveryTime      time.Time `gorm:"type:timestamp;column:delivery_time;not null"`
 	Price             float64   `gorm:"type:decimal(6,2);column:price;not null"`
 	SupplyNumber      uint64    `gorm:"type:int;column:supply_number;not null"`
-	Quantity          float64   `gorm:"type:decimal(2,0);column:quantity;not null"`
+	Quantity          int       `gorm:"type:decimal(2,0);column:quantity;not null"`
 	MiscellaneousData string    `gorm:"type:char(24);column:miscellaneous_data;not null"`
 }
 
@@ -100,8 +100,8 @@ type Stock struct {
 	WarehouseId               uint64    `gorm:"type:int;column:warehouse_id;not null"`
 	Item                      Item      `gorm:"foreignKey:ItemId;references:id"`
 	ItemId                    uint64    `gorm:"type:int;column:item_id;not null"`
-	Quantity                  float64   `gorm:"type:decimal(4,0);column:quantity;not null"`
-	YearToDateQuantityOrdered float64   `gorm:"type:decimal(8,2);column:year_to_date_quantity_ordered;not null"`
+	Quantity                  int       `gorm:"type:decimal(4,0);column:quantity;not null"`
+	YearToDateQuantityOrdered int       `gorm:"type:decimal(8,2);column:year_to_date_quantity_ordered;not null"`
 	OrdersNumber              uint64    `gorm:"type:int;column:orders_number;not null"`
 	RemoteOrdersNumber        uint64    `gorm:"type:int;column:remote_orders_number;not null"`
 	District1Info             string    `gorm:"type:char(24);column:district_1_info;not null"`
