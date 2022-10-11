@@ -8,8 +8,9 @@ import (
 	"time"
 )
 
+var db = postgre.GetDB()
+
 func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
-	db := postgre.GetDB()
 
 	var local bool
 	var warehouseTax, districtTax, discount, totalAmount float64

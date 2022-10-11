@@ -2,12 +2,11 @@ package transaction
 
 import (
 	"cs5424project/store/models"
-	"cs5424project/store/postgre"
 	"gorm.io/gorm"
+	"log"
 )
 
 func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
-	db := postgre.GetDB()
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var err error
@@ -39,5 +38,9 @@ func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
 
 		return nil
 	})
+
+	if err != nil {
+		log.Printf("Popular item transaction error: %v", err)
+	}
 	return err
 }

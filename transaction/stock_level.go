@@ -2,13 +2,12 @@ package transaction
 
 import (
 	"cs5424project/store/models"
-	"cs5424project/store/postgre"
 	"fmt"
 	"gorm.io/gorm"
+	"log"
 )
 
 func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) error {
-	db := postgre.GetDB()
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var err error
@@ -26,8 +25,7 @@ func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) erro
 		var orderLines []models.OrderLine
 		if err = tx.
 			Where("warehouse_id = ? AND district_id = ? AND order_id >= ?", warehouseId, districtId, startOrderId).
-			Find(&orderLines).Error;
-			err != nil {
+			Find(&orderLines).Error; err != nil {
 			return err
 		}
 
@@ -50,5 +48,8 @@ func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) erro
 		return nil
 	})
 
+	if err != nil {
+		log.Printf("Stock level transaction error: %v", err)
+	}
 	return err
 }
