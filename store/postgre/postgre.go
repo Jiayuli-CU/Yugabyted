@@ -23,47 +23,47 @@ func init() {
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Fail to start postgres db: %v", err)
+		log.Fatalf("Fail to start postgres db: %v\n", err)
 	}
 	conn, _ := db.DB()
 	err = conn.Ping()
 	if err != nil {
-		log.Fatalf("Fail to connect to postgres db: %v", err)
+		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
-	log.Println("Successfully connected to postgres db")
+	log.Printf("Successfully connected to postgres db\n")
 	initMigrations(db)
 }
 
 func initMigrations(db *gorm.DB) {
 	err := db.AutoMigrate(&models.Warehouse{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate warehouse to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate warehouse to postgres db: %v\n", err)
 	}
 	err = db.AutoMigrate(&models.District{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate district to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate district to postgres db: %v\n", err)
 	}
 	err = db.AutoMigrate(&models.Customer{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate customer to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate customer to postgres db: %v\n", err)
 	}
 	err = db.AutoMigrate(&models.Order{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate order to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate order to postgres db: %v\n", err)
 	}
 	err = db.AutoMigrate(&models.Item{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate item to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate item to postgres db: %v\n", err)
 	}
 	err = db.AutoMigrate(&models.OrderLine{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate orderline to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
 	}
 	err = db.AutoMigrate(&models.Stock{})
 	if err != nil {
-		log.Fatalf("Fail to auto-migrate stock to postgres db: %v", err)
+		log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
 	}
-	log.Println("Successfully auto-migrated all models to postgres db")
+	log.Printf("Successfully auto-migrated all models to postgres db\n")
 }
 
 func generateDSN(host, port, user, password, dbname string) string {
