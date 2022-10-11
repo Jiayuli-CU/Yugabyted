@@ -36,5 +36,8 @@ func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
 				return err
 			}
 		}
+
+		return nil
 	})
+	return err
 }
