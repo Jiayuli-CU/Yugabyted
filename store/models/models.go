@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Warehouse struct {
-	Id               uint64  `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id               uint64  `gorm:"primaryKey;type:int;column:id"`
 	Name             string  `gorm:"type:varchar(10);column:name;unique;not null"`
 	StreetLine1      string  `gorm:"type:varchar(20);column:street_line_1;not null"`
 	StreetLine2      string  `gorm:"type:varchar(20);column:street_line_2;not null"`
@@ -15,7 +15,7 @@ type Warehouse struct {
 }
 
 type District struct {
-	Id                       uint64    `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id                       uint64    `gorm:"primaryKey;type:int;column:id"`
 	Warehouse                Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
 	WarehouseId              uint64    `gorm:"type:int;column:warehouse_id;not null"`
 	Name                     string    `gorm:"type:varchar(10);column:name;unique;not null"`
@@ -30,7 +30,7 @@ type District struct {
 }
 
 type Customer struct {
-	Id                uint64    `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id                uint64    `gorm:"primaryKey;type:int;column:id"`
 	Warehouse         Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
 	WarehouseId       uint64    `gorm:"type:int;column:warehouse_id;not null"`
 	District          District  `gorm:"foreignKey:DistrictId;references:id"`
@@ -56,7 +56,7 @@ type Customer struct {
 }
 
 type Order struct {
-	Id          uint64    `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id          uint64    `gorm:"primaryKey;type:int;column:id"`
 	Warehouse   Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
 	WarehouseId uint64    `gorm:"type:int;column:warehouse_id;not null"`
 	District    District  `gorm:"foreignKey:DistrictId;references:id"`
@@ -70,7 +70,7 @@ type Order struct {
 }
 
 type Item struct {
-	Id      uint64  `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id      uint64  `gorm:"primaryKey;type:int;column:id"`
 	Name    string  `gorm:"type:varchar(24);column:name;unique;not null"`
 	Price   float64 `gorm:"type:decimal(5,2);column:price;not null"`
 	ImageId uint64  `gorm:"type:int;column:image_id;not null"`
@@ -78,7 +78,7 @@ type Item struct {
 }
 
 type OrderLine struct {
-	Id                uint64    `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id                uint64    `gorm:"primaryKey;type:int;column:id"`
 	Warehouse         Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
 	WarehouseId       uint64    `gorm:"type:int;column:warehouse_id;not null"`
 	District          District  `gorm:"foreignKey:DistrictId;references:id"`
@@ -95,7 +95,7 @@ type OrderLine struct {
 }
 
 type Stock struct {
-	Id                        uint64    `gorm:"primaryKey;type:int;column:id;auto_increment"`
+	Id                        uint64    `gorm:"primaryKey;type:int;column:id"`
 	Warehouse                 Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
 	WarehouseId               uint64    `gorm:"type:int;column:warehouse_id;not null"`
 	Item                      Item      `gorm:"foreignKey:ItemId;references:id"`
