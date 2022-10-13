@@ -1,14 +1,13 @@
 package main
 
 import (
-	"cs5424project/router"
-	"github.com/gin-gonic/gin"
+	"cs5424project/data"
+	"fmt"
 )
 
 func main() {
-	r := gin.Default()
-
-	router.RegisterRouter(r)
-
-	r.Run()
+	err := data.LoadWarehouse()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }

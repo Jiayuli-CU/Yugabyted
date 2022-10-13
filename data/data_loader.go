@@ -2,14 +2,14 @@ package data
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"encoding/csv"
-	"fmt"
 	"os"
 	"strconv"
 )
 
-func loadWarehouse() {
-	file, err := os.Open("./data_files/warehouse.csv")
+func LoadWarehouse() error {
+	file, err := os.Open("data/data_files/warehouse.csv")
 	if err != nil {
 		panic(err)
 	}
@@ -42,5 +42,10 @@ func loadWarehouse() {
 			YearToDateAmount: yearToDateAmount,
 		}
 	}
-	fmt.Println(warehouses[1])
+
+	db := postgre.GetDB()
+	if err = db.Create(&warehouses).Error; err != nil {
+		return err
+	}
+	return nil
 }
