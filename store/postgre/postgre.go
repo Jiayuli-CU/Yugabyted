@@ -3,9 +3,10 @@ package postgre
 import (
 	"cs5424project/store/models"
 	"fmt"
+	"log"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 )
 
 var db *gorm.DB
@@ -17,7 +18,7 @@ const (
 	password    = "SYl-f5R-0HM69wk1U0FLjLfPd3ziNx"
 	dbname      = "yugabyte"
 	sslmode     = "verify-full"
-	sslrootcert = "store/postgre/root.crt"
+	sslrootcert = "./root.crt"
 )
 
 func init() {

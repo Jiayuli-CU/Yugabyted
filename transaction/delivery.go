@@ -27,17 +27,17 @@ func DeliveryTransaction(warehouseId, carrierId uint64) {
 			return err
 		}
 		var customer models.Customer
-		if err := tx.Model(&models.Customer{}).Where("id = ?", order.CustomerId).Find(&customer).Error; err != nil {
+		if err := tx.Model(&models.Customer{}).Where("id = ? AND warehouse_id = ? AND district_id = ?", order.CustomerId, order.WarehouseId, order.DistrictId).Find(&customer).Error; err != nil {
 			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
 		order.CarrierId = carrierId
-		if err := tx.Model(&models.Order{}).Where("id = ?", order.Id).Updates(&order).Error; err != nil {
+		if err := tx.Model(&models.Order{}).Where("id = ? AND warehouse_id = ? AND district_id = ?", order.Id, order.WarehouseId, order.DistrictId).Updates(&order).Error; err != nil {
 			log.Printf("Update order error: %v\n", err)
 			return err
 		}
 		var orderLines []models.OrderLine
-		if err := tx.Model(&models.OrderLine{}).Where("order_id = ?", order.Id).Find(&orderLines).Error; err != nil {
+		if err := tx.Model(&models.OrderLine{}).Where("warehouse_id = ? AND district_id = ? AND order_id = ?", order.WarehouseId, order.DistrictId, order.Id).Find(&orderLines).Error; err != nil {
 			log.Printf("Find order lines error: %v\n", err)
 			return err
 		}
@@ -45,14 +45,14 @@ func DeliveryTransaction(warehouseId, carrierId uint64) {
 		for _, orderLine := range orderLines {
 			orderLine.DeliveryTime = time.Now()
 			totalAmount += orderLine.Price
-			if err := tx.Model(&models.OrderLine{}).Where("id = ?", orderLine.Id).Updates(&orderLine).Error; err != nil {
+			if err := tx.Model(&models.OrderLine{}).Where("warehouse_id = ? AND district_id = ? AND order_id = ? AND id = ?", orderLine.WarehouseId, orderLine.DistrictId, orderLine.OrderId, orderLine.Id).Updates(&orderLine).Error; err != nil {
 				log.Printf("Update order line error: %v\n", err)
 				return err
 			}
 		}
 		customer.Balance += totalAmount
 		customer.DeliveriesNumber++
-		if err := tx.Model(&models.Customer{}).Where("id = ?", customer.Id).Updates(&customer).Error; err != nil {
+		if err := tx.Model(&models.Customer{}).Where("warehouse_id = ? AND district_id = ? AND id = ?", customer.WarehouseId, customer.DistrictId, customer.Id).Updates(&customer).Error; err != nil {
 			log.Printf("Update customer error: %v\n", err)
 			return err
 		}

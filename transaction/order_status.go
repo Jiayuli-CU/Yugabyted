@@ -17,11 +17,11 @@ func OrderStatusTransaction(warehouseId, districtId, customerId uint64) {
 			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
-		if err := tx.Model(&models.Order{}).Where("customer_id = ?", customer.Id).Last(&order).Error; err != nil {
+		if err := tx.Model(&models.Order{}).Where("customer_id = ? AND warehouse_id = ? AND district_id = ?", customer.Id, customer.WarehouseId, customer.DistrictId).Last(&order).Error; err != nil {
 			log.Printf("Last order error: %v\n", err)
 			return err
 		}
-		if err := tx.Model(&models.OrderLine{}).Where("order_id = ?", order.Id).Find(&orderLines).Error; err != nil {
+		if err := tx.Model(&models.OrderLine{}).Where("order_id = ? AND warehouse_id = ? AND district_id = ?", order.Id, order.WarehouseId, order.DistrictId).Find(&orderLines).Error; err != nil {
 			log.Printf("Find order lines error: %v\n", err)
 			return err
 		}
