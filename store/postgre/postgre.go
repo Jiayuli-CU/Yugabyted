@@ -18,7 +18,7 @@ const (
 	password    = "SYl-f5R-0HM69wk1U0FLjLfPd3ziNx"
 	dbname      = "yugabyte"
 	sslmode     = "verify-full"
-	sslrootcert = "./root.crt"
+	sslrootcert = "root.crt"
 )
 
 func init() {
