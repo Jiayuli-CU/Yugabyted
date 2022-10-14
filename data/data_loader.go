@@ -56,7 +56,7 @@ func LoadOrder() error {
 
 	var err error
 
-	file, err := os.Open("data/data_files/order.csv")
+	file, err := os.Open("./data_files/order.csv")
 	if err != nil {
 		panic(err)
 	}
