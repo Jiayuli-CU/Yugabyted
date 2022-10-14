@@ -2,14 +2,17 @@ package data
 
 import (
 	"cs5424project/store/models"
-	"cs5424project/store/postgre"
+	"time"
+
+	//"cs5424project/store/postgre"
 	"encoding/csv"
+	"fmt"
 	"os"
 	"strconv"
 )
 
-func LoadWarehouse() error {
-	file, err := os.Open("data/data_files/warehouse.csv")
+func LoadWarehouse() {
+	file, err := os.Open("./data_files/warehouse.csv")
 	if err != nil {
 		panic(err)
 	}
@@ -43,9 +46,193 @@ func LoadWarehouse() error {
 		}
 	}
 
-	db := postgre.GetDB()
-	if err = db.Create(&warehouses).Error; err != nil {
-		return err
+	//db := postgre.GetDB()
+	//if err = db.Create(&warehouses).Error; err != nil {
+	//	return err
+	//}
+	//return nil
+}
+
+func LoadDistrict() {
+	file, err := os.Open("./data_files/district.csv")
+	if err != nil {
+		panic(err)
 	}
-	return nil
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	// 设置返回记录中每行数据期望的字段数，-1 表示返回所有字段
+	reader.FieldsPerRecord = -1
+	// 通过 readAll 方法返回 csv 文件中的所有内容
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	var districts []models.District
+	districts = make([]models.District, len(records))
+	for i, record := range records {
+		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
+		id, _ := strconv.ParseUint(record[1], 10, 64)
+		taxRate, _ := strconv.ParseFloat(record[8], 32)
+		yearToDateAmount, _ := strconv.ParseFloat(record[9], 32)
+		nextAvailableOrderNumber, _ := strconv.ParseUint(record[10], 10, 64)
+
+		districts[i] = models.District{
+			Id:                       id,
+			WarehouseId:              wareHouseId,
+			Name:                     record[2],
+			StreetLine1:              record[3],
+			StreetLine2:              record[4],
+			City:                     record[5],
+			State:                    record[6],
+			Zip:                      record[7],
+			TaxRate:                  taxRate,
+			YearToDateAmount:         yearToDateAmount,
+			NextAvailableOrderNumber: nextAvailableOrderNumber,
+		}
+	}
+
+	fmt.Println(districts[0])
+}
+
+func LoadCustomer() {
+	file, err := os.Open("./data_files/customer.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = -1
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	var customers []models.Customer
+	customers = make([]models.Customer, len(records))
+
+	for i, record := range records {
+		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
+		districtId, _ := strconv.ParseUint(record[1], 10, 64)
+		id, _ := strconv.ParseUint(record[2], 10, 64)
+		createTime, _ := time.ParseInLocation("2006-01-02 15:04:05", record[12], time.Local)
+		creditLimit, _ := strconv.ParseFloat(record[14], 32)
+		discountRate, _ := strconv.ParseFloat(record[15], 32)
+		balance, _ := strconv.ParseFloat(record[16], 32)
+		yearToDatePayment, _ := strconv.ParseFloat(record[17], 32)
+		paymentsNumber, _ := strconv.ParseUint(record[18], 10, 64)
+		deliveriesNumber, _ := strconv.ParseUint(record[19], 10, 64)
+
+		customers[i] = models.Customer{
+			Id:                id,
+			WarehouseId:       wareHouseId,
+			DistrictId:        districtId,
+			FirstName:         record[3],
+			MiddleName:        record[4],
+			LastName:          record[5],
+			StreetLine1:       record[6],
+			StreetLine2:       record[7],
+			City:              record[8],
+			State:             record[9],
+			Zip:               record[10],
+			Phone:             record[11],
+			CreateTime:        createTime,
+			CreditStatus:      record[13],
+			CreditLimit:       creditLimit,
+			DiscountRate:      discountRate,
+			Balance:           balance,
+			YearToDatePayment: yearToDatePayment,
+			PaymentsNumber:    paymentsNumber,
+			DeliveriesNumber:  deliveriesNumber,
+			MiscellaneousData: record[20],
+		}
+	}
+
+	fmt.Println(customers[0])
+}
+
+func LoadItem() {
+	file, err := os.Open("./data_files/item.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = -1
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	var items []models.Item
+	items = make([]models.Item, len(records))
+
+	for i, record := range records {
+		id, _ := strconv.ParseUint(record[0], 10, 64)
+		price, _ := strconv.ParseFloat(record[2], 32)
+		imageId, _ := strconv.ParseUint(record[3], 10, 64)
+
+		items[i] = models.Item{
+			Id:      id,
+			Name:    record[1],
+			Price:   price,
+			ImageId: imageId,
+			Data:    record[4],
+		}
+	}
+
+	fmt.Println(items[0])
+}
+
+func LoadStock() {
+	file, err := os.Open("./data_files/stock.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	// 设置返回记录中每行数据期望的字段数，-1 表示返回所有字段
+	reader.FieldsPerRecord = -1
+	// 通过 readAll 方法返回 csv 文件中的所有内容
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	var stocks []models.Stock
+	stocks = make([]models.Stock, len(records))
+	for i, record := range records {
+		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
+		itemId, _ := strconv.ParseUint(record[1], 10, 64)
+		quantity, _ := strconv.ParseInt(record[2], 10, 64)
+		yearToDateQuantityOrdered, _ := strconv.ParseInt(record[3], 10, 64)
+		ordersNumber, _ := strconv.ParseUint(record[4], 10, 64)
+		remoteOrdersNumber, _ := strconv.ParseUint(record[5], 10, 64)
+
+		stocks[i] = models.Stock{
+			WarehouseId:               wareHouseId,
+			ItemId:                    itemId,
+			Quantity:                  int(quantity),
+			YearToDateQuantityOrdered: int(yearToDateQuantityOrdered),
+			OrdersNumber:              ordersNumber,
+			RemoteOrdersNumber:        remoteOrdersNumber,
+			District1Info:             record[6],
+			District2Info:             record[7],
+			District3Info:             record[8],
+			District4Info:             record[9],
+			District5Info:             record[10],
+			District6Info:             record[11],
+			District7Info:             record[12],
+			District8Info:             record[13],
+			District9Info:             record[14],
+			District10Info:            record[15],
+			MiscellaneousData:         record[16],
+		}
+	}
+
+	fmt.Println(stocks[0])
 }
