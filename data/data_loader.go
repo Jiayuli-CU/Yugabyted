@@ -114,3 +114,65 @@ func LoadOrder() error {
 
 	return nil
 }
+
+func LoadOrderLine() error {
+	file, err := os.Open("data/data_files/order-line.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	// 设置返回记录中每行数据期望的字段数，-1 表示返回所有字段
+	reader.FieldsPerRecord = -1
+	// 通过 readAll 方法返回 csv 文件中的所有内容
+	record, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	orderlines := make([]models.OrderLine, 100)
+
+	// var warehouseId, districtId, orderId, id, itemId, supplyWarehouseId uint64
+	// var quantity int
+	// var deliveryTime
+	// var totalPrice float64
+
+	index := 0
+	for _, ol := range record {
+		if index == 100 {
+			//if err = db.Create(&orders).Error; err != nil {
+			//	return err
+			//}
+			fmt.Println(orderlines[0])
+			index = 0
+			break
+		}
+		warehouseId, _ := strconv.ParseUint(ol[0], 10, 64)
+		districtId, _ := strconv.ParseUint(ol[1], 10, 64)
+		orderId, _ := strconv.ParseUint(ol[2], 10, 64)
+		id, _ := strconv.ParseUint(ol[3], 10, 64)
+		itemId, _ := strconv.ParseUint(ol[4], 10, 64)
+		deliveryTime, _ := time.ParseInLocation("2006-01-02 15:04:05", ol[5], time.Local)
+		totalPrice, _ := strconv.ParseFloat(ol[6], 32)
+		supplyWarehouseId, _ := strconv.ParseUint(ol[7], 10, 64)
+		quantity, _ := strconv.ParseInt(ol[8], 10, 64)
+
+		orderlines[index] = models.OrderLine{
+			WarehouseId:       warehouseId,
+			DistrictId:        districtId,
+			OrderId:           orderId,
+			Id:                id,
+			ItemId:            itemId,
+			DeliveryTime:      deliveryTime,
+			Price:             totalPrice,
+			SupplyNumber:      supplyWarehouseId,
+			Quantity:          int(quantity),
+			MiscellaneousData: ol[9],
+		}
+
+		index += 1
+	}
+
+	return nil
+}
