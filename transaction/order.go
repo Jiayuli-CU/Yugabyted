@@ -84,7 +84,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 
 			stock := &models.Stock{
 				WarehouseId: wId,
-				Id:          itemNumber,
+				ItemId:      itemNumber,
 			}
 			if err = tx.First(stock).Error; err != nil {
 				return nil

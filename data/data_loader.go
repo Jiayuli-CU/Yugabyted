@@ -2,6 +2,7 @@ package data
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"time"
 
 	//"cs5424project/store/postgre"
@@ -10,6 +11,8 @@ import (
 	"os"
 	"strconv"
 )
+
+var db = postgre.GetDB()
 
 func LoadWarehouse() {
 	file, err := os.Open("./data_files/warehouse.csv")
@@ -27,7 +30,6 @@ func LoadWarehouse() {
 		panic(err)
 	}
 
-	//var warehouses []models.Warehouse
 	warehouses := make([]models.Warehouse, len(record))
 	for i, w := range record {
 		id, _ := strconv.ParseUint(w[0], 10, 64)
@@ -46,11 +48,7 @@ func LoadWarehouse() {
 		}
 	}
 
-	//db := postgre.GetDB()
-	//if err = db.Create(&warehouses).Error; err != nil {
-	//	return err
-	//}
-	//return nil
+	err = db.Create(&warehouses).Error
 }
 
 func LoadDistrict() {
@@ -93,7 +91,7 @@ func LoadDistrict() {
 		}
 	}
 
-	fmt.Println(districts[0])
+	err = db.Create(&districts).Error
 }
 
 func LoadCustomer() {
