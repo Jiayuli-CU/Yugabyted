@@ -20,7 +20,7 @@ func init() {
 	}
 	//cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("ap-southeast-1")
 	cluster.SslOpts = &gocql.SslOptions{
-		CaPath:                 "../root.crt",
+		CaPath:                 "root.crt",
 		EnableHostVerification: false,
 	}
 
@@ -38,6 +38,10 @@ func init() {
 		log.Println(err)
 		return
 	}
+}
+
+func initTables() {
+	
 }
 
 func GetSession() *gocql.Session {
