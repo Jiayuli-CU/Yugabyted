@@ -38,7 +38,7 @@ func init() {
 		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
 	log.Printf("Successfully connected to postgres db\n")
-	//initMigrations(db)
+	initMigrations(db)
 }
 
 func initMigrations(db *gorm.DB) {
