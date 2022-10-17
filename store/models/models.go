@@ -25,7 +25,7 @@ type District struct {
 	State                    string  `gorm:"type:char(2);column:state;not null"`
 	Zip                      string  `gorm:"type:char(9);column:zip;not null"`
 	TaxRate                  float64 `gorm:"type:decimal(4,4);column:tax_rate;not null"`
-	Year2DateAmount          float64 `gorm:"type:decimal(12,2);column:year_to_date_amount;not null"`
+	YearToDateAmount         float64 `gorm:"type:decimal(12,2);column:year_to_date_amount;not null"`
 	NextAvailableOrderNumber uint64  `gorm:"type:int;column:next_available_order_number;not null"`
 }
 
@@ -65,7 +65,7 @@ type Order struct {
 	CustomerId  uint64    `gorm:"type:int;column:customer_id;not null"`
 	CarrierId   uint64    `gorm:"type:int;column:carrier_id;not null"`
 	ItemsNumber uint64    `gorm:"type:int;column:items_number;not null"`
-	Status      bool      `gorm:"type:decimal(1,0);column:status;not null"`
+	Status      int       `gorm:"type:decimal(1,0);column:status;not null"`
 	EntryTime   time.Time `gorm:"type:timestamp;column:entry_time;not null"`
 }
 
@@ -95,7 +95,6 @@ type OrderLine struct {
 }
 
 type Stock struct {
-	Id uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:id"`
 	//Warehouse                 Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
 	WarehouseId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:warehouse_id;not null"`
 	//Item                      Item      `gorm:"foreignKey:ItemId;references:id"`
