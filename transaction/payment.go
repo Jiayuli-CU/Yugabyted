@@ -58,7 +58,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 			log.Printf("Find district error: %v\n", err)
 			return err
 		}
-		district.Year2DateAmount += payment
+		district.YearToDateAmount += payment
 		if err := tx.Model(&models.District{}).
 			Where("id = ? AND warehouse_id = ?", districtId, warehouseId).
 			Updates(&district).Error; err != nil {
