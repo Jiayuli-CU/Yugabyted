@@ -30,6 +30,10 @@ func SqlClient(filepath string) {
 			paymentParser(info)
 		case "D":
 			deliveryParser(info)
+		case "O":
+			orderStatusParser(info)
+		case "S":
+			stockLevelParser(info)
 		}
 	}
 }
@@ -59,9 +63,42 @@ func newOrderParser(info []string, buff *bufio.Reader) {
 }
 
 func paymentParser(info []string) {
-	//TODO:
+	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
+	districtId, _ := strconv.ParseUint(info[2], 10, 64)
+	customerId, _ := strconv.ParseUint(info[3], 10, 64)
+	payment, _ := strconv.ParseFloat(info[4], 32)
+	err := transaction.PaymentTransaction(warehouseId, districtId, customerId, payment)
+	if err != nil {
+		fmt.Printf("Payment Transaction failed: %s\n", err.Error())
+	}
 }
 
 func deliveryParser(info []string) {
-	//TODO:
+	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
+	carrierId, _ := strconv.ParseUint(info[2], 10, 64)
+	err := transaction.DeliveryTransaction(warehouseId, carrierId)
+	if err != nil {
+		fmt.Printf("Delivery Transaction failed: %s\n", err.Error())
+	}
+}
+
+func orderStatusParser(info []string) {
+	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
+	districtId, _ := strconv.ParseUint(info[2], 10, 64)
+	customerId, _ := strconv.ParseUint(info[3], 10, 64)
+	err := transaction.OrderStatusTransaction(warehouseId, districtId, customerId)
+	if err != nil {
+		fmt.Printf("Order-Status Transaction failed: %s\n", err.Error())
+	}
+}
+
+func stockLevelParser(info []string) {
+	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
+	districtId, _ := strconv.ParseUint(info[2], 10, 64)
+	threshold, _ := strconv.Atoi(info[3])
+	orderNumber, _ := strconv.Atoi(info[4])
+	err := transaction.StockLevel(warehouseId, districtId, threshold, orderNumber)
+	if err != nil {
+		fmt.Printf("Stock-Level Transaction failed: %s\n", err.Error())
+	}
 }

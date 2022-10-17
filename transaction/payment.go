@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-func PaymentTransaction(warehouseId, districtId, customerId uint64, payment float64) {
+func PaymentTransaction(warehouseId, districtId, customerId uint64, payment float64) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. Update the customer (C_W_ID, C_D_ID, C_ID) as follows:
 		// 		• Decrement C_BALANCE by PAYMENT
@@ -70,4 +70,5 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 	if err != nil {
 		log.Printf("Payment transaction error: %v\n", err)
 	}
+	return err
 }

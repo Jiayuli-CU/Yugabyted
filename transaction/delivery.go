@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func DeliveryTransaction(warehouseId, carrierId uint64) {
+func DeliveryTransaction(warehouseId, carrierId uint64) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. For DISTRICT_NO = 1 to 10
 		// 		(a) Let N denote the value of the smallest order number O_ID for district (W_ID,DISTRICT_NO)
@@ -61,4 +61,5 @@ func DeliveryTransaction(warehouseId, carrierId uint64) {
 	if err != nil {
 		log.Printf("Delivery transaction error: %v\n", err)
 	}
+	return err
 }

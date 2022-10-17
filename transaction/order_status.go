@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func OrderStatusTransaction(warehouseId, districtId, customerId uint64) {
+func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
 	var customer models.Customer
 	var order models.Order
 	var orderLines []models.OrderLine
@@ -29,7 +29,7 @@ func OrderStatusTransaction(warehouseId, districtId, customerId uint64) {
 	})
 	if err != nil {
 		log.Printf("Order status transaction error: %v\n", err)
-		return
+		return nil
 	}
 	log.Printf("Customer info: first name = %v, middle name = %v, last name = %v, balance = %v\n",
 		customer.FirstName,
@@ -51,4 +51,5 @@ func OrderStatusTransaction(warehouseId, districtId, customerId uint64) {
 			orderLine.DeliveryTime,
 		)
 	}
+	return err
 }
