@@ -309,6 +309,7 @@ func LoadOrderLine() error {
 	// var quantity int
 	// var deliveryTime
 	// var totalPrice float64
+	var deliveryTime time.Time
 
 	for i, ol := range record {
 		warehouseId, _ := strconv.ParseUint(ol[0], 10, 64)
@@ -316,7 +317,9 @@ func LoadOrderLine() error {
 		orderId, _ := strconv.ParseUint(ol[2], 10, 64)
 		id, _ := strconv.ParseUint(ol[3], 10, 64)
 		itemId, _ := strconv.ParseUint(ol[4], 10, 64)
-		deliveryTime, _ := time.ParseInLocation("2006-01-02 15:04:05", ol[5], time.Local)
+		if ol[5] != "" {
+			deliveryTime, _ = time.ParseInLocation("2006-01-02 15:04:05", ol[5], time.Local)
+		}
 		totalPrice, _ := strconv.ParseFloat(ol[6], 32)
 		supplyWarehouseId, _ := strconv.ParseUint(ol[7], 10, 64)
 		quantity, _ := strconv.ParseInt(ol[8], 10, 64)

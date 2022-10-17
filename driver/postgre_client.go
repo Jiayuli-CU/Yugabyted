@@ -2,7 +2,7 @@ package driver
 
 import (
 	"bufio"
-	"cs5424project/transaction"
+	"cs5424project/transaction/postgre"
 	"fmt"
 	"io"
 	"os"
@@ -52,7 +52,7 @@ func newOrderParser(info []string, buff *bufio.Reader) {
 		supplierWarehouses = append(supplierWarehouses, supplyWarehouseId)
 		quantities = append(quantities, quantity)
 	}
-	err := transaction.NewOrder(warehouseId, districtId, customerId, total, itemNumbers, supplierWarehouses, quantities)
+	err := postgre.NewOrder(warehouseId, districtId, customerId, total, itemNumbers, supplierWarehouses, quantities)
 	if err != nil {
 		fmt.Printf("New Order Transaction failed: %s\n", err.Error())
 	}
