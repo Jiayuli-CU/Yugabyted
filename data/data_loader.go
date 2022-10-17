@@ -289,7 +289,7 @@ func LoadOrder() {
 }
 
 func LoadOrderLine() error {
-	file, err := os.Open("data/data_files/order-line.csv")
+	file, err := os.Open("./data_files/order-line.csv")
 	if err != nil {
 		panic(err)
 	}
@@ -304,23 +304,14 @@ func LoadOrderLine() error {
 		panic(err)
 	}
 
-	orderlines := make([]models.OrderLine, 100)
+	orderlines := make([]models.OrderLine, len(record))
 
 	// var warehouseId, districtId, orderId, id, itemId, supplyWarehouseId uint64
 	// var quantity int
 	// var deliveryTime
 	// var totalPrice float64
 
-	index := 0
-	for _, ol := range record {
-		if index == 100 {
-			//if err = db.Create(&orders).Error; err != nil {
-			//	return err
-			//}
-			fmt.Println(orderlines[0])
-			index = 0
-			break
-		}
+	for i, ol := range record {
 		warehouseId, _ := strconv.ParseUint(ol[0], 10, 64)
 		districtId, _ := strconv.ParseUint(ol[1], 10, 64)
 		orderId, _ := strconv.ParseUint(ol[2], 10, 64)
@@ -331,7 +322,7 @@ func LoadOrderLine() error {
 		supplyWarehouseId, _ := strconv.ParseUint(ol[7], 10, 64)
 		quantity, _ := strconv.ParseInt(ol[8], 10, 64)
 
-		orderlines[index] = models.OrderLine{
+		orderlines[i] = models.OrderLine{
 			WarehouseId:       warehouseId,
 			DistrictId:        districtId,
 			OrderId:           orderId,
@@ -343,9 +334,9 @@ func LoadOrderLine() error {
 			Quantity:          int(quantity),
 			MiscellaneousData: ol[9],
 		}
-
-		index += 1
 	}
 
-	return nil
+	err = db.CreateInBatches(&orderlines, 100).Error
+
+	return err
 }
