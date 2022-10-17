@@ -65,7 +65,7 @@ type Order struct {
 	CustomerId  uint64    `gorm:"type:int;column:customer_id;not null"`
 	CarrierId   uint64    `gorm:"type:int;column:carrier_id;not null"`
 	ItemsNumber uint64    `gorm:"type:int;column:items_number;not null"`
-	Status      bool      `gorm:"type:decimal(1,0);column:status;not null"`
+	Status      int       `gorm:"type:decimal(1,0);column:status;not null"`
 	EntryTime   time.Time `gorm:"type:timestamp;column:entry_time;not null"`
 }
 

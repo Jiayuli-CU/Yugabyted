@@ -38,14 +38,15 @@ func init() {
 		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
 	log.Printf("Successfully connected to postgres db\n")
-	//initMigrations(db)
+	initMigrations(db)
 }
 
 func initMigrations(db *gorm.DB) {
-	err := db.AutoMigrate(&models.Warehouse{})
-	if err != nil {
-		log.Fatalf("Fail to auto-migrate warehouse to postgres db: %v\n", err)
-	}
+	var err error
+	//err = db.AutoMigrate(&models.Warehouse{})
+	//if err != nil {
+	//	log.Fatalf("Fail to auto-migrate warehouse to postgres db: %v\n", err)
+	//}
 	//err = db.AutoMigrate(&models.District{})
 	//if err != nil {
 	//	log.Fatalf("Fail to auto-migrate district to postgres db: %v\n", err)
@@ -62,10 +63,10 @@ func initMigrations(db *gorm.DB) {
 	//if err != nil {
 	//	log.Fatalf("Fail to auto-migrate item to postgres db: %v\n", err)
 	//}
-	//err = db.AutoMigrate(&models.OrderLine{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
-	//}
+	err = db.AutoMigrate(&models.OrderLine{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
+	}
 	//err = db.AutoMigrate(&models.Stock{})
 	//if err != nil {
 	//	log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)

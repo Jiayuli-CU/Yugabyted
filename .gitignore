@@ -1,2 +1,4 @@
 .idea
 ./data/data_files
+.DS_Store
+./data/.DS_Store

@@ -27,3 +27,7 @@ func Test_LoadCustomer(t *testing.T) {
 func Test_LoadItem(t *testing.T) {
 	LoadItem()
 }
+
+func Test_LoadOrderline(t *testing.T) {
+	LoadOrderLine()
+}

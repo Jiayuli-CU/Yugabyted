@@ -5,7 +5,6 @@ import (
 	"cs5424project/store/postgre"
 	"time"
 
-	//"cs5424project/store/postgre"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -91,7 +90,7 @@ func LoadDistrict() {
 		}
 	}
 
-	err = db.Create(&districts).Error
+	err = db.CreateInBatches(&districts, 100).Error
 }
 
 func LoadCustomer() {
@@ -148,7 +147,7 @@ func LoadCustomer() {
 		}
 	}
 
-	fmt.Println(customers[0])
+	err = db.CreateInBatches(&customers, 100).Error
 }
 
 func LoadItem() {
@@ -167,6 +166,7 @@ func LoadItem() {
 
 	var items []models.Item
 	items = make([]models.Item, len(records))
+	fmt.Println(len(records))
 
 	for i, record := range records {
 		id, _ := strconv.ParseUint(record[0], 10, 64)
@@ -182,7 +182,7 @@ func LoadItem() {
 		}
 	}
 
-	fmt.Println(items[0])
+	err = db.CreateInBatches(&items, 100).Error
 }
 
 func LoadStock() {
@@ -232,10 +232,10 @@ func LoadStock() {
 		}
 	}
 
-	fmt.Println(stocks[0])
+	err = db.CreateInBatches(&stocks, 100).Error
 }
 
-func LoadOrder() error {
+func LoadOrder() {
 
 	var err error
 
@@ -254,22 +254,11 @@ func LoadOrder() error {
 		panic(err)
 	}
 
-	//db := postgre.GetDB()
-
-	orders := make([]models.Order, 100)
+	orders := make([]models.Order, len(record))
 
 	var warehouseId, districtId, id, customerId, carrierId, itemNumber uint64
 
-	index := 0
-	for _, o := range record {
-		if index == 100 {
-			//if err = db.Create(&orders).Error; err != nil {
-			//	return err
-			//}
-			fmt.Println(orders[0])
-			index = 0
-			break
-		}
+	for i, o := range record {
 		warehouseId, _ = strconv.ParseUint(o[0], 10, 64)
 		districtId, _ = strconv.ParseUint(o[1], 10, 64)
 		id, _ = strconv.ParseUint(o[2], 10, 64)
@@ -280,20 +269,73 @@ func LoadOrder() error {
 			carrierId = 0
 		}
 		itemNumber, _ = strconv.ParseUint(o[5], 10, 64)
+		entryTime, _ := time.ParseInLocation("2006-01-02 15:04:05", o[7], time.Local)
+		status, _ := strconv.ParseUint(o[6], 10, 64)
 
-		orders[index] = models.Order{
+		orders[i] = models.Order{
 			WarehouseId: warehouseId,
 			DistrictId:  districtId,
 			Id:          id,
 			CustomerId:  customerId,
 			CarrierId:   carrierId,
 			ItemsNumber: itemNumber,
-			Status:      o[6] != "0",
-			EntryTime:   time.Now(),
+			Status:      int(status),
+			EntryTime:   entryTime,
 		}
-
-		index += 1
 	}
 
-	return nil
+	err = db.CreateInBatches(&orders, 100).Error
+}
+
+func LoadOrderLine() error {
+	file, err := os.Open("./data_files/order-line.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	// 设置返回记录中每行数据期望的字段数，-1 表示返回所有字段
+	reader.FieldsPerRecord = -1
+	// 通过 readAll 方法返回 csv 文件中的所有内容
+	record, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	orderlines := make([]models.OrderLine, len(record))
+
+	// var warehouseId, districtId, orderId, id, itemId, supplyWarehouseId uint64
+	// var quantity int
+	// var deliveryTime
+	// var totalPrice float64
+
+	for i, ol := range record {
+		warehouseId, _ := strconv.ParseUint(ol[0], 10, 64)
+		districtId, _ := strconv.ParseUint(ol[1], 10, 64)
+		orderId, _ := strconv.ParseUint(ol[2], 10, 64)
+		id, _ := strconv.ParseUint(ol[3], 10, 64)
+		itemId, _ := strconv.ParseUint(ol[4], 10, 64)
+		deliveryTime, _ := time.ParseInLocation("2006-01-02 15:04:05", ol[5], time.Local)
+		totalPrice, _ := strconv.ParseFloat(ol[6], 32)
+		supplyWarehouseId, _ := strconv.ParseUint(ol[7], 10, 64)
+		quantity, _ := strconv.ParseInt(ol[8], 10, 64)
+
+		orderlines[i] = models.OrderLine{
+			WarehouseId:       warehouseId,
+			DistrictId:        districtId,
+			OrderId:           orderId,
+			Id:                id,
+			ItemId:            itemId,
+			DeliveryTime:      deliveryTime,
+			Price:             totalPrice,
+			SupplyNumber:      supplyWarehouseId,
+			Quantity:          int(quantity),
+			MiscellaneousData: ol[9],
+		}
+	}
+
+	err = db.CreateInBatches(&orderlines, 100).Error
+
+	return err
 }
