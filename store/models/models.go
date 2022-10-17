@@ -87,7 +87,7 @@ type OrderLine struct {
 	OrderId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:order_id;not null"`
 	//Item              Item      `gorm:"foreignKey:ItemId;references:id"`
 	ItemId            uint64    `gorm:"type:int;column:item_id;not null"`
-	DeliveryTime      time.Time `gorm:"type:timestamp;column:delivery_time;not null"`
+	DeliveryTime      time.Time `gorm:"type:timestamp;column:delivery_time"`
 	Price             float64   `gorm:"type:decimal(6,2);column:price;not null"`
 	SupplyNumber      uint64    `gorm:"type:int;column:supply_number;not null"`
 	Quantity          int       `gorm:"type:decimal(2,0);column:quantity;not null"`

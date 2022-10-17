@@ -317,7 +317,7 @@ func LoadOrderLine() error {
 		orderId, _ := strconv.ParseUint(ol[2], 10, 64)
 		id, _ := strconv.ParseUint(ol[3], 10, 64)
 		itemId, _ := strconv.ParseUint(ol[4], 10, 64)
-		if ol[5] != "" {
+		if ol[5] != "null" {
 			deliveryTime, _ = time.ParseInLocation("2006-01-02 15:04:05", ol[5], time.Local)
 		} else {
 			deliveryTime = time.Time{}
