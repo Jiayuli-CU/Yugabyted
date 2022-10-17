@@ -1,9 +1,11 @@
 package main
 
 import (
-	"cs5424project/data"
+	"cs5424project/store/cassandra"
+	"fmt"
 )
 
 func main() {
-	data.LoadWarehouse()
+	session := cassandra.GetSession()
+	fmt.Println(session)
 }
