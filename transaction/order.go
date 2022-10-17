@@ -12,16 +12,15 @@ var db = postgre.GetDB()
 
 func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
 
-	var local bool
 	var warehouseTax, districtTax, discount, totalAmount float64
 	var warehouse *models.Warehouse
 	var customer *models.Customer
 	var district *models.District
 
-	local = true
+	local := 1
 	for _, w := range supplierWarehouses {
 		if warehouseId != w {
-			local = false
+			local = 0
 			break
 		}
 	}
