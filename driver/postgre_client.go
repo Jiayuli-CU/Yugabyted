@@ -2,7 +2,6 @@ package driver
 
 import (
 	"bufio"
-	"cs5424project/transaction"
 	"cs5424project/transaction/postgre"
 	"fmt"
 	"io"
@@ -77,7 +76,7 @@ func paymentParser(info []string) {
 func deliveryParser(info []string) {
 	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
 	carrierId, _ := strconv.ParseUint(info[2], 10, 64)
-	err := transaction.DeliveryTransaction(warehouseId, carrierId)
+	err := postgre.DeliveryTransaction(warehouseId, carrierId)
 	if err != nil {
 		fmt.Printf("Delivery Transaction failed: %s\n", err.Error())
 	}

@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+	//db := postgre.GetDB()
 	session := cassandra.GetSession()
 	fmt.Println(session)
 }
