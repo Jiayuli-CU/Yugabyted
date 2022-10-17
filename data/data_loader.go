@@ -2,14 +2,16 @@ package data
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"time"
 
-	//"cs5424project/store/postgre"
 	"encoding/csv"
 	"fmt"
 	"os"
 	"strconv"
 )
+
+var db = postgre.GetDB()
 
 func LoadWarehouse() {
 	file, err := os.Open("./data_files/warehouse.csv")
@@ -46,11 +48,7 @@ func LoadWarehouse() {
 		}
 	}
 
-	//db := postgre.GetDB()
-	//if err = db.Create(&warehouses).Error; err != nil {
-	//	return err
-	//}
-	//return nil
+	err = db.Create(&warehouses).Error
 }
 
 func LoadDistrict() {
@@ -93,7 +91,7 @@ func LoadDistrict() {
 		}
 	}
 
-	fmt.Println(districts[0])
+	err = db.CreateInBatches(&districts, 100).Error
 }
 
 func LoadCustomer() {
@@ -150,7 +148,7 @@ func LoadCustomer() {
 		}
 	}
 
-	fmt.Println(customers[0])
+	err = db.CreateInBatches(&customers, 100).Error
 }
 
 func LoadItem() {
@@ -169,6 +167,7 @@ func LoadItem() {
 
 	var items []models.Item
 	items = make([]models.Item, len(records))
+	fmt.Println(len(records))
 
 	for i, record := range records {
 		id, _ := strconv.ParseUint(record[0], 10, 64)
@@ -184,7 +183,7 @@ func LoadItem() {
 		}
 	}
 
-	fmt.Println(items[0])
+	err = db.CreateInBatches(&items, 100).Error
 }
 
 func LoadStock() {
@@ -234,10 +233,10 @@ func LoadStock() {
 		}
 	}
 
-	fmt.Println(stocks[0])
+	err = db.CreateInBatches(&stocks, 100).Error
 }
 
-func LoadOrder() error {
+func LoadOrder() {
 
 	var err error
 
@@ -256,22 +255,11 @@ func LoadOrder() error {
 		panic(err)
 	}
 
-	//db := postgre.GetDB()
-
-	orders := make([]models.Order, 100)
+	orders := make([]models.Order, len(record))
 
 	var warehouseId, districtId, id, customerId, carrierId, itemNumber uint64
 
-	index := 0
-	for _, o := range record {
-		if index == 100 {
-			//if err = db.Create(&orders).Error; err != nil {
-			//	return err
-			//}
-			fmt.Println(orders[0])
-			index = 0
-			break
-		}
+	for i, o := range record {
 		warehouseId, _ = strconv.ParseUint(o[0], 10, 64)
 		districtId, _ = strconv.ParseUint(o[1], 10, 64)
 		id, _ = strconv.ParseUint(o[2], 10, 64)
@@ -282,20 +270,20 @@ func LoadOrder() error {
 			carrierId = 0
 		}
 		itemNumber, _ = strconv.ParseUint(o[5], 10, 64)
+		entryTime, _ := time.ParseInLocation("2006-01-02 15:04:05", o[7], time.Local)
+		status, _ := strconv.ParseUint(o[6], 10, 64)
 
-		orders[index] = models.Order{
+		orders[i] = models.Order{
 			WarehouseId: warehouseId,
 			DistrictId:  districtId,
 			Id:          id,
 			CustomerId:  customerId,
 			CarrierId:   carrierId,
 			ItemsNumber: itemNumber,
-			Status:      o[6] != "0",
-			EntryTime:   time.Now(),
+			Status:      int(status),
+			EntryTime:   entryTime,
 		}
-
-		index += 1
 	}
 
-	return nil
+	err = db.CreateInBatches(&orders, 100).Error
 }

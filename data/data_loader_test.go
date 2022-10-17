@@ -24,6 +24,6 @@ func Test_LoadCustomer(t *testing.T) {
 	LoadCustomer()
 }
 
-func Test_LoadItem(t *testing.T) {
-	LoadItem()
-}
+//func Test_LoadItem(t *testing.T) {
+//	LoadItem()
+//}
