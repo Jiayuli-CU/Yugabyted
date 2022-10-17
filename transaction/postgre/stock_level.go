@@ -1,4 +1,4 @@
-package transaction
+package postgre
 
 import (
 	"cs5424project/store/models"
