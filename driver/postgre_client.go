@@ -22,7 +22,7 @@ func SqlClient(filepath string) {
 		if err == io.EOF {
 			break
 		}
-		info := strings.Split(line, " ")
+		info := strings.Split(line, ",")
 		switch info[0] {
 		case "N":
 			newOrderParser(info, buff)
