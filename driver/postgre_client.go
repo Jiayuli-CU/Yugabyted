@@ -34,6 +34,12 @@ func SqlClient(filepath string) {
 			orderStatusParser(info)
 		case "S":
 			stockLevelParser(info)
+		case "I":
+			popularItemParser(info)
+		case "T":
+			topBalanceParser()
+		case "R":
+			relatedCustomerParser(info)
 		}
 	}
 }
@@ -100,5 +106,32 @@ func stockLevelParser(info []string) {
 	err := postgre.StockLevel(warehouseId, districtId, threshold, orderNumber)
 	if err != nil {
 		fmt.Printf("Stock-Level Transaction failed: %s\n", err.Error())
+	}
+}
+
+func popularItemParser(info []string) {
+	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
+	districtId, _ := strconv.ParseUint(info[2], 10, 64)
+	orderNumber, _ := strconv.Atoi(info[3])
+	err := postgre.PopularItem(warehouseId, districtId, orderNumber)
+	if err != nil {
+		fmt.Printf("Popular-Item Transaction failed: %s\n", err.Error())
+	}
+}
+
+func topBalanceParser() {
+	err := postgre.Top10Balance()
+	if err != nil {
+		fmt.Printf("Top-Balance Transaction failed: %s\n", err.Error())
+	}
+}
+
+func relatedCustomerParser(info []string) {
+	warehouseId, _ := strconv.ParseUint(info[1], 10, 64)
+	districtId, _ := strconv.ParseUint(info[2], 10, 64)
+	customerId, _ := strconv.ParseUint(info[3], 10, 64)
+	err := postgre.RelatedCustomerTransaction(customerId, warehouseId, districtId)
+	if err != nil {
+		fmt.Printf("Related-Customer Transaction failed: %s\n", err.Error())
 	}
 }
