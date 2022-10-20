@@ -8,21 +8,27 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func SqlClient(filepath string) {
+func SqlClient(filepath string, clientNumber int) {
 	file, err := os.Open(filepath)
 	defer file.Close()
 	if err != nil {
 		panic(err)
 	}
 	buff := bufio.NewReader(file)
+	excutedTransactions := 0
+	var latencies []time.Duration
+	start := time.Now()
 	for {
 		line, err := buff.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
+		excutedTransactions += 1
 		info := strings.Split(line, ",")
+		startTransaction := time.Now()
 		switch info[0] {
 		case "N":
 			newOrderParser(info, buff)
@@ -35,7 +41,10 @@ func SqlClient(filepath string) {
 		case "S":
 			stockLevelParser(info)
 		}
+		latencies = append(latencies, time.Since(startTransaction))
 	}
+	totalExcutionTime := time.Since(start)
+	fmt.Printf("client %v, total excution time is %v\n", clientNumber, totalExcutionTime)
 }
 
 func newOrderParser(info []string, buff *bufio.Reader) {
@@ -60,6 +69,7 @@ func newOrderParser(info []string, buff *bufio.Reader) {
 	if err != nil {
 		fmt.Printf("New Order Transaction failed: %s\n", err.Error())
 	}
+
 }
 
 func paymentParser(info []string) {
