@@ -303,7 +303,8 @@ func LoadOrderLine() error {
 		panic(err)
 	}
 
-	orderlines := make([]models.OrderLine, len(record))
+	var orderlines = make([]models.OrderLine, 100000)
+	//var orderlines []models.OrderLine
 
 	// var warehouseId, districtId, orderId, id, itemId, supplyWarehouseId uint64
 	// var quantity int
@@ -312,6 +313,15 @@ func LoadOrderLine() error {
 	var deliveryTime time.Time
 
 	for i, ol := range record {
+
+		if i != 0 && i%100000 == 0 {
+			err = db.CreateInBatches(&orderlines, 2000).Error
+			if err != nil {
+				return err
+			}
+			orderlines = make([]models.OrderLine, 100000)
+		}
+		i = i % 100000
 		warehouseId, _ := strconv.ParseUint(ol[0], 10, 64)
 		districtId, _ := strconv.ParseUint(ol[1], 10, 64)
 		orderId, _ := strconv.ParseUint(ol[2], 10, 64)
@@ -338,9 +348,16 @@ func LoadOrderLine() error {
 			Quantity:          int(quantity),
 			MiscellaneousData: ol[9],
 		}
+
+		if i == len(record)-1 {
+			finalBatch := orderlines[0 : len(record)/100000]
+			err = db.CreateInBatches(&finalBatch, 2000).Error
+			if err != nil {
+				return err
+			}
+		}
+
 	}
 
-	err = db.CreateInBatches(&orderlines, 100).Error
-
-	return err
+	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) {
+func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. Let S be the set of customers who are related to the customer identified by (C_W_ID, C_D_ID,
 		//	  C_ID).
@@ -47,4 +47,5 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) {
 	if err != nil {
 		log.Printf("Related customer transaction error: %v", err)
 	}
+	return err
 }

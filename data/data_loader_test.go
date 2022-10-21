@@ -1,6 +1,7 @@
 package data
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -29,5 +30,7 @@ func Test_LoadItem(t *testing.T) {
 }
 
 func Test_LoadOrderline(t *testing.T) {
-	LoadOrderLine()
+	err := LoadOrderLine()
+	assert.NoError(t, err)
+
 }

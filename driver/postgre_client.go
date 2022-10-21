@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +19,7 @@ func SqlClient(filepath string, clientNumber int) {
 		panic(err)
 	}
 	buff := bufio.NewReader(file)
-	excutedTransactions := 0
+	executedTransactions := 0
 	var latencies []time.Duration
 	start := time.Now()
 	for {
@@ -26,8 +27,8 @@ func SqlClient(filepath string, clientNumber int) {
 		if err == io.EOF {
 			break
 		}
-		excutedTransactions += 1
-		info := strings.Split(line, ",")
+		executedTransactions += 1
+		info := strings.Split(strings.Replace(line, "\n", "", -1), ",")
 		startTransaction := time.Now()
 		switch info[0] {
 		case "N":
@@ -45,33 +46,54 @@ func SqlClient(filepath string, clientNumber int) {
 		case "T":
 			topBalanceParser()
 		case "R":
-			relatedCustomerParser(info)
+			//relatedCustomerParser(info)
+
 		}
 		latencies = append(latencies, time.Since(startTransaction))
 	}
-	totalExcutionTime := time.Since(start)
-	fmt.Printf("client %v, total excution time is %v\n", clientNumber, totalExcutionTime)
+	totalExecutionTime := time.Since(start)
+	executionSeconds := int(totalExecutionTime.Seconds())
+	sort.Slice(latencies, func(i, j int) bool {
+		return latencies[i] < latencies[j]
+	})
+	var sumLatency int64
+	for _, t := range latencies {
+		sumLatency += t.Milliseconds()
+	}
+	latencyAverage := sumLatency / int64(executedTransactions)
+	latencyMedian := latencies[executedTransactions/2].Milliseconds()
+	latency95Percent := latencies[int(float32(executedTransactions)*0.95)].Milliseconds()
+	latency99Percent := latencies[int(float32(executedTransactions)*0.99)].Milliseconds()
+
+	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
+	fmt.Printf("client %v, total excution time: %v\n", clientNumber, executionSeconds)
+	fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
+	fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
+	fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
+	fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
+	fmt.Printf("client %v, 99th percentile transaction latency: %v ms\n", clientNumber, latency99Percent)
 }
 
 func newOrderParser(info []string, buff *bufio.Reader) {
 	customerId, _ := strconv.ParseUint(info[1], 10, 64)
 	warehouseId, _ := strconv.ParseUint(info[2], 10, 64)
 	districtId, _ := strconv.ParseUint(info[3], 10, 64)
-	total, _ := strconv.ParseUint(info[4], 10, 64)
+	total, _ := strconv.Atoi(info[4])
 	itemNumbers := make([]uint64, total)
 	supplierWarehouses := make([]uint64, total)
 	quantities := make([]int, total)
-	for i := 0; i < int(total); i++ {
+	for i := 0; i < total; i++ {
 		subLine, _ := buff.ReadString('\n')
-		subInfo := strings.Split(subLine, " ")
+		subInfo := strings.Split(strings.Replace(subLine, "\n", "", -1), ",")
 		itemNumber, _ := strconv.ParseUint(subInfo[0], 10, 64)
 		supplyWarehouseId, _ := strconv.ParseUint(subInfo[1], 10, 64)
 		quantity, _ := strconv.Atoi(subInfo[2])
-		itemNumbers = append(itemNumbers, itemNumber)
-		supplierWarehouses = append(supplierWarehouses, supplyWarehouseId)
-		quantities = append(quantities, quantity)
+		itemNumbers[i] = itemNumber
+		supplierWarehouses[i] = supplyWarehouseId
+		quantities[i] = quantity
 	}
-	err := postgre.NewOrder(warehouseId, districtId, customerId, total, itemNumbers, supplierWarehouses, quantities)
+
+	err := postgre.NewOrder(warehouseId, districtId, customerId, uint64(total), itemNumbers, supplierWarehouses, quantities)
 	if err != nil {
 		fmt.Printf("New Order Transaction failed: %s\n", err.Error())
 	}
