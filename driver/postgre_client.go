@@ -52,7 +52,7 @@ func SqlClient(filepath string, clientNumber int) {
 		latencies = append(latencies, time.Since(startTransaction))
 	}
 	totalExecutionTime := time.Since(start)
-	executionSeconds := int(totalExecutionTime.Seconds())
+	executionSeconds := totalExecutionTime.Seconds()
 	sort.Slice(latencies, func(i, j int) bool {
 		return latencies[i] < latencies[j]
 	})
@@ -66,8 +66,8 @@ func SqlClient(filepath string, clientNumber int) {
 	latency99Percent := latencies[int(float32(executedTransactions)*0.99)].Milliseconds()
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
-	fmt.Printf("client %v, total excution time: %v\n", clientNumber, executionSeconds)
-	fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
+	fmt.Printf("client %v, total excution time: %v s\n", clientNumber, executionSeconds)
+	fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, float32(executedTransactions)/float32(executionSeconds))
 	fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
 	fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
 	fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
