@@ -11,7 +11,10 @@ import (
 	"strconv"
 )
 
-var db = postgre.GetDB()
+var (
+	db               = postgre.GetDB()
+	customerOrderMap = map[uint64][]uint64{}
+)
 
 func LoadWarehouse() {
 	file, err := os.Open("./data_files/warehouse.csv")
@@ -263,6 +266,16 @@ func LoadOrder() {
 		districtId, _ = strconv.ParseUint(o[1], 10, 64)
 		id, _ = strconv.ParseUint(o[2], 10, 64)
 		customerId, _ = strconv.ParseUint(o[3], 10, 64)
+
+		// add to customerOrderMap
+		var orderIds []uint64
+		if orderIds, ok := customerOrderMap[customerId]; ok {
+			orderIds = append(orderIds, id)
+		} else {
+			orderIds = []uint64{id}
+		}
+		customerOrderMap[customerId] = orderIds
+
 		if o[4] != "null" {
 			carrierId, _ = strconv.ParseUint(o[4], 10, 64)
 		} else {
@@ -360,4 +373,8 @@ func LoadOrderLine() error {
 	}
 
 	return nil
+}
+
+func GetCustomerOrderMap() map[uint64][]uint64 {
+	return customerOrderMap
 }
