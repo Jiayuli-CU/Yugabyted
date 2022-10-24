@@ -13,7 +13,7 @@ import (
 
 var (
 	db               = postgre.GetDB()
-	customerOrderMap = map[uint64][]uint64{}
+	orderCustomerMap = map[uint64]uint64{}
 )
 
 func LoadWarehouse() {
@@ -267,14 +267,7 @@ func LoadOrder() {
 		id, _ = strconv.ParseUint(o[2], 10, 64)
 		customerId, _ = strconv.ParseUint(o[3], 10, 64)
 
-		// add to customerOrderMap
-		var orderIds []uint64
-		if orderIds, ok := customerOrderMap[customerId]; ok {
-			orderIds = append(orderIds, id)
-		} else {
-			orderIds = []uint64{id}
-		}
-		customerOrderMap[customerId] = orderIds
+		orderCustomerMap[id] = customerId
 
 		if o[4] != "null" {
 			carrierId, _ = strconv.ParseUint(o[4], 10, 64)
@@ -375,6 +368,6 @@ func LoadOrderLine() error {
 	return nil
 }
 
-func GetCustomerOrderMap() map[uint64][]uint64 {
-	return customerOrderMap
+func GetOrderCustomerMap() map[uint64]uint64 {
+	return orderCustomerMap
 }

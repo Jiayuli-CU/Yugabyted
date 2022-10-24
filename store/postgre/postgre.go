@@ -1,6 +1,7 @@
 package postgre
 
 import (
+	"cs5424project/data"
 	"cs5424project/store/models"
 	"errors"
 	"fmt"
@@ -79,7 +80,7 @@ func initMigrations(db *gorm.DB) {
 }
 
 func shardingAlgorithm(value interface{}) (suffix string, err error) {
-	if uid, ok := value.(int64); ok {
+	if uid, ok := value.(uint64); ok {
 		return fmt.Sprintf("_%02d", uid%shardingNumber), nil
 	}
 	return "", errors.New("invalid user_id")
@@ -101,10 +102,15 @@ func shardingDB(db *gorm.DB) {
 		PrimaryKeyGenerator: sharding.PKSnowflake,
 	}, "orders"))
 	db.Use(sharding.Register(sharding.Config{
-		DoubleWrite:         false,
-		ShardingKey:         "order_id",
-		NumberOfShards:      shardingNumber,
-		ShardingAlgorithm:   shardingAlgorithm,
+		DoubleWrite:    false,
+		ShardingKey:    "order_id",
+		NumberOfShards: shardingNumber,
+		ShardingAlgorithm: func(value interface{}) (suffix string, err error) {
+			if uid, ok := value.(uint64); ok {
+				return fmt.Sprintf("_%02d", data.GetOrderCustomerMap()[uid]%shardingNumber), nil
+			}
+			return "", errors.New("invalid user_id")
+		},
 		PrimaryKeyGenerator: sharding.PKSnowflake,
 	}, "orderlines"))
 	db.Use(sharding.Register(sharding.Config{
