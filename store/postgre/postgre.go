@@ -2,21 +2,24 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"errors"
 	"fmt"
 	"log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/sharding"
 )
 
 var db *gorm.DB
 
 const (
-	host     = "ap-southeast-1.cffa655e-246b-4910-bb38-38d762998390.aws.ybdb.io"
-	port     = "5433"
-	user     = "admin"
-	password = "SYl-f5R-0HM69wk1U0FLjLfPd3ziNx"
-	dbname   = "yugabyte"
+	host           = "ap-southeast-1.cffa655e-246b-4910-bb38-38d762998390.aws.ybdb.io"
+	port           = "5433"
+	user           = "admin"
+	password       = "SYl-f5R-0HM69wk1U0FLjLfPd3ziNx"
+	dbname         = "yugabyte"
+	shardingNumber = 5
 )
 
 func init() {
@@ -38,6 +41,7 @@ func init() {
 		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
 	log.Printf("Successfully connected to postgres db\n")
+	shardingDB(db)
 	//initMigrations(db)
 }
 
@@ -72,6 +76,51 @@ func initMigrations(db *gorm.DB) {
 	//	log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
 	//}
 	log.Printf("Successfully auto-migrated all models to postgres db\n")
+}
+
+func shardingAlgorithm(value interface{}) (suffix string, err error) {
+	if uid, ok := value.(int64); ok {
+		return fmt.Sprintf("_%02d", uid%shardingNumber), nil
+	}
+	return "", errors.New("invalid user_id")
+}
+
+func shardingDB(db *gorm.DB) {
+	db.Use(sharding.Register(sharding.Config{
+		DoubleWrite:         false,
+		ShardingKey:         "id",
+		NumberOfShards:      shardingNumber,
+		ShardingAlgorithm:   shardingAlgorithm,
+		PrimaryKeyGenerator: sharding.PKSnowflake,
+	}, "customers"))
+	db.Use(sharding.Register(sharding.Config{
+		DoubleWrite:         false,
+		ShardingKey:         "customer_id",
+		NumberOfShards:      shardingNumber,
+		ShardingAlgorithm:   shardingAlgorithm,
+		PrimaryKeyGenerator: sharding.PKSnowflake,
+	}, "orders"))
+	db.Use(sharding.Register(sharding.Config{
+		DoubleWrite:         false,
+		ShardingKey:         "order_id",
+		NumberOfShards:      shardingNumber,
+		ShardingAlgorithm:   shardingAlgorithm,
+		PrimaryKeyGenerator: sharding.PKSnowflake,
+	}, "orderlines"))
+	db.Use(sharding.Register(sharding.Config{
+		DoubleWrite:         false,
+		ShardingKey:         "id",
+		NumberOfShards:      shardingNumber,
+		ShardingAlgorithm:   shardingAlgorithm,
+		PrimaryKeyGenerator: sharding.PKSnowflake,
+	}, "items"))
+	db.Use(sharding.Register(sharding.Config{
+		DoubleWrite:         false,
+		ShardingKey:         "item_id",
+		NumberOfShards:      shardingNumber,
+		ShardingAlgorithm:   shardingAlgorithm,
+		PrimaryKeyGenerator: sharding.PKSnowflake,
+	}, "stocks"))
 }
 
 func generateDSN(host, port, user, password, dbname string) string {
