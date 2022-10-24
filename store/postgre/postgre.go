@@ -63,14 +63,14 @@ func initMigrations(db *gorm.DB) {
 	//if err != nil {
 	//	log.Fatalf("Fail to auto-migrate item to postgres db: %v\n", err)
 	//}
-	err = db.AutoMigrate(&models.OrderLine{})
-	if err != nil {
-		log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
-	}
-	//err = db.AutoMigrate(&models.Stock{})
+	//err = db.AutoMigrate(&models.OrderLine{})
 	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
+	//	log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
 	//}
+	err = db.AutoMigrate(&models.Stock{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
+	}
 	log.Printf("Successfully auto-migrated all models to postgres db\n")
 }
 

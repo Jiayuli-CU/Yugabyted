@@ -8,10 +8,14 @@ import (
 
 var session *gocql.Session
 
+const (
+	keySpace = "cs5424_groupI"
+)
+
 func init() {
 	var err error
 	cluster := gocql.NewCluster("ap-southeast-1.cffa655e-246b-4910-bb38-38d762998390.aws.ybdb.io")
-	cluster.Keyspace = "yugabyte"
+	cluster.Keyspace = keySpace
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -33,7 +37,7 @@ func init() {
 	defer session.Close()
 
 	// create keyspaces
-	err = session.Query("CREATE KEYSPACE IF NOT EXISTS yugabyte WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1};").Exec()
+	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1};").Exec()
 	if err != nil {
 		log.Println(err)
 		return
@@ -46,6 +50,7 @@ func initTables() {
 	var err error
 
 	//warehouse
+
 	err = session.Query("CREATE TABLE IF NOT EXISTS yugabyte.warehouss (id int, name text, street_line_1 text, street_line_2 text, city text, state text, zip text, tax_rate float, year_to_date_amount float, PRIMARY KEY (id));").Exec()
 	if err != nil {
 		log.Println(err)

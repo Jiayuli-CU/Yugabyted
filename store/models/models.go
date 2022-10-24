@@ -100,7 +100,7 @@ type Stock struct {
 	//Item                      Item      `gorm:"foreignKey:ItemId;references:id"`
 	ItemId                    uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:item_id;not null"`
 	Quantity                  int    `gorm:"type:decimal(4,0);column:quantity;not null"`
-	YearToDateQuantityOrdered int    `gorm:"type:decimal(8,2);column:year_to_date_quantity_ordered;not null"`
+	YearToDateQuantityOrdered int    `gorm:"type:decimal(8,0);column:year_to_date_quantity_ordered;not null"`
 	OrdersNumber              uint64 `gorm:"type:int;column:orders_number;not null"`
 	RemoteOrdersNumber        uint64 `gorm:"type:int;column:remote_orders_number;not null"`
 	District1Info             string `gorm:"type:char(24);column:district_1_info;not null"`

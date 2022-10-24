@@ -232,7 +232,7 @@ func LoadStock() {
 		}
 	}
 
-	err = db.CreateInBatches(&stocks, 100).Error
+	err = db.CreateInBatches(&stocks, 1000).Error
 }
 
 func LoadOrder() {
