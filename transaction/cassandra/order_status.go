@@ -1,26 +1,26 @@
 package cassandra
 
 import (
-	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
 )
 
 func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
-	var customer models.Customer
+	var customer postgre.Customer
 	if err := session.Query(fmt.Sprintf(`SELECT * FROM customers WHERE id = %v AND warehouse_id = %v AND district_id = %v LIMIT 1`, customerId, warehouseId, districtId)).
 		Consistency(gocql.Quorum).Scan(&customer); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
 	}
-	var order models.Order
+	var order postgre.Order
 	if err := session.Query(fmt.Sprintf(`SELECT * FROM orders WHERE customer_id = %v AND warehouse_id = %v AND district_id = %v ORDER BY id DESC LIMIT 1`, customer.Id, customer.WarehouseId, customer.DistrictId)).
 		Consistency(gocql.Quorum).Scan(&order); err != nil {
 		log.Printf("Last order error: %v\n", err)
 		return err
 	}
-	var orderLines []models.OrderLine
+	var orderLines []postgre.OrderLine
 	if err := session.Query(fmt.Sprintf(`SELECT * FROM orderlines WHERE order_id = %v AND warehouse_id = %v AND district_id = %v`, order.Id, order.WarehouseId, order.DistrictId)).
 		Consistency(gocql.Quorum).Scan(&orderLines); err != nil {
 		log.Printf("Find order lines error: %v\n", err)

@@ -2,7 +2,7 @@ package cassandra
 
 import (
 	"cs5424project/store/cassandra"
-	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
@@ -25,13 +25,13 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 	//			  items placed in order X
 	//			• Increment C_DELIVERY_CNT by 1
 	for districtId := 1; districtId <= 10; districtId++ {
-		var order models.Order
+		var order postgre.Order
 		if err := session.Query(fmt.Sprintf(`SELECT * FROM orders WHERE carrier_id = null AND warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)).
 			Consistency(gocql.Quorum).Scan(&order); err != nil {
 			log.Printf("First order error: %v\n", err)
 			return err
 		}
-		var customer models.Customer
+		var customer postgre.Customer
 		if err := session.Query(fmt.Sprintf(`SELECT * FROM customers WHERE id = %v AND warehouse_id = %v AND district_id = %v`, order.CustomerId, order.WarehouseId, order.DistrictId)).
 			Consistency(gocql.Quorum).Scan(&customer); err != nil {
 			log.Printf("Find customer error: %v\n", err)
@@ -42,7 +42,7 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 			log.Printf("Update order error: %v\n", err)
 			return err
 		}
-		var orderLines []models.OrderLine
+		var orderLines []postgre.OrderLine
 		if err := session.Query(fmt.Sprintf(`SELECT * FROM orderlines WHERE warehouse_id = %v AND district_id = %v AND order_id = %v`, order.WarehouseId, order.DistrictId, order.Id)).
 			Consistency(gocql.Quorum).Scan(&orderLines); err != nil {
 			log.Printf("Find order lines error: %v\n", err)

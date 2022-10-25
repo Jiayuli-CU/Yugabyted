@@ -1,7 +1,6 @@
 package postgre
 
 import (
-	"cs5424project/store/models"
 	"cs5424project/store/postgre"
 	"fmt"
 	"gorm.io/gorm"
@@ -13,10 +12,10 @@ var db = postgre.GetDB()
 func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
 
 	var warehouseTax, districtTax, discount, totalAmount float64
-	var warehouse *models.Warehouse
-	var customer *models.Customer
-	var district *models.District
-	var items []models.Item
+	var warehouse *postgre.Warehouse
+	var customer *postgre.Customer
+	var district *postgre.District
+	var items []postgre.Item
 	var itemInfos []string
 	var orderId uint64
 	var err error
@@ -31,7 +30,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 
 	// promise that get orderId and update orderId is atomic
 	err = db.Transaction(func(tx *gorm.DB) error {
-		district = &models.District{
+		district = &postgre.District{
 			WarehouseId: warehouseId,
 			Id:          districtId,
 		}
@@ -50,7 +49,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 		return err
 	}
 
-	warehouse = &models.Warehouse{
+	warehouse = &postgre.Warehouse{
 		Id: warehouseId,
 	}
 	if err = db.First(warehouse).Error; err != nil {
@@ -58,7 +57,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 	}
 	warehouseTax = warehouse.TaxRate
 
-	customer = &models.Customer{
+	customer = &postgre.Customer{
 		WarehouseId: warehouseId,
 		DistrictId:  districtId,
 		Id:          customerId,
@@ -69,7 +68,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 	discount = customer.DiscountRate
 
 	//create new order
-	newOrder := &models.Order{
+	newOrder := &postgre.Order{
 		Id:          orderId,
 		DistrictId:  districtId,
 		WarehouseId: warehouseId,
@@ -98,7 +97,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 			wId := supplierWarehouses[idx]
 			quantity := quantities[idx]
 
-			stock := &models.Stock{
+			stock := &postgre.Stock{
 				WarehouseId: wId,
 				ItemId:      itemNumber,
 			}
@@ -130,7 +129,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 			//itemAmount, _ := decimal.NewFromInt(int64(quantities[idx])).Mul(decimal.NewFromFloat(item.Price)).Float64()
 			totalAmount += itemAmount
 
-			orderLine := &models.OrderLine{
+			orderLine := &postgre.OrderLine{
 				OrderId:           orderId,
 				DistrictId:        districtId,
 				WarehouseId:       warehouseId,
@@ -166,9 +165,9 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
 
 	var warehouseTax, districtTax, discount, totalAmount float64
-	var warehouse *models.Warehouse
-	var customer *models.Customer
-	var district *models.District
+	var warehouse *postgre.Warehouse
+	var customer *postgre.Customer
+	var district *postgre.District
 
 	local := 1
 	for _, w := range supplierWarehouses {
@@ -183,7 +182,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 		// 在事务中执行一些 db 操作（从这里开始，您应该使用 'tx' 而不是 'db'）
 
 		// get warehouse, district, customer by primary key from database
-		warehouse = &models.Warehouse{
+		warehouse = &postgre.Warehouse{
 			Id: warehouseId,
 		}
 		if err = tx.First(warehouse).Error; err != nil {
@@ -191,7 +190,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 		}
 		warehouseTax = warehouse.TaxRate
 
-		district = &models.District{
+		district = &postgre.District{
 			WarehouseId: warehouseId,
 			Id:          districtId,
 		}
@@ -205,7 +204,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 			return err
 		}
 
-		customer = &models.Customer{
+		customer = &postgre.Customer{
 			WarehouseId: warehouseId,
 			DistrictId:  districtId,
 			Id:          customerId,
@@ -216,7 +215,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 		discount = customer.DiscountRate
 
 		//create new order
-		newOrder := &models.Order{
+		newOrder := &postgre.Order{
 			Id:          orderId,
 			DistrictId:  districtId,
 			WarehouseId: warehouseId,
@@ -236,7 +235,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 			wId := supplierWarehouses[idx]
 			quantity := quantities[idx]
 
-			stock := &models.Stock{
+			stock := &postgre.Stock{
 				WarehouseId: wId,
 				ItemId:      itemNumber,
 			}
@@ -263,7 +262,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 			}
 
 			// calculate item and total amount
-			item := &models.Item{
+			item := &postgre.Item{
 				Id: itemNumber,
 			}
 			if err = tx.First(item).Error; err != nil {
@@ -273,7 +272,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 			//itemAmount, _ := decimal.NewFromInt(int64(quantities[idx])).Mul(decimal.NewFromFloat(item.Price)).Float64()
 			totalAmount += itemAmount
 
-			orderLine := &models.OrderLine{
+			orderLine := &postgre.OrderLine{
 				OrderId:           orderId,
 				DistrictId:        districtId,
 				WarehouseId:       warehouseId,

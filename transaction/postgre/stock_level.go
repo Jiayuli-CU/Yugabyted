@@ -1,7 +1,7 @@
 package postgre
 
 import (
-	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"fmt"
 	"gorm.io/gorm"
 	"log"
@@ -12,7 +12,7 @@ func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) erro
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var err error
 
-		district := &models.District{
+		district := &postgre.District{
 			WarehouseId: warehouseId,
 			Id:          districtId,
 		}
@@ -22,7 +22,7 @@ func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) erro
 		nextOrderId := district.NextAvailableOrderNumber
 		startOrderId := int(nextOrderId) - orderNumber
 
-		var orderLines []models.OrderLine
+		var orderLines []postgre.OrderLine
 		if err = tx.
 			Where("warehouse_id = ? AND district_id = ? AND order_id >= ?", warehouseId, districtId, startOrderId).
 			Find(&orderLines).Error; err != nil {
@@ -32,7 +32,7 @@ func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) erro
 		count := 0
 		for _, orderLine := range orderLines {
 			itemId := orderLine.ItemId
-			stock := &models.Stock{
+			stock := &postgre.Stock{
 				WarehouseId: warehouseId,
 				ItemId:      itemId,
 			}
