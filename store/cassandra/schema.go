@@ -84,7 +84,7 @@ func createSchema() {
 	}
 
 	stockQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.stocks " +
-		"(warehouse_id int, item_id int, quantity int, total_quantity float, basic_info FROZEN<stock_info>, " +
+		"(warehouse_id int, item_id int, basic_info FROZEN<stock_info>, " +
 		"PRIMARY KEY ((warehouse_id), item_id));"
 	err = session.Query(stockQuery).Exec()
 	if err != nil {
@@ -93,7 +93,7 @@ func createSchema() {
 	}
 
 	stockCounterQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.stock_counter " +
-		"(warehouse_id int, item_id int, order_count int, remote_count int, " +
+		"(warehouse_id int, item_id int, order_count counter, remote_count counter, quantity counter, total_quantity counter " +
 		"PRIMARY KEY ((warehouse_id), item_id));"
 	err = session.Query(stockCounterQuery).Exec()
 	if err != nil {

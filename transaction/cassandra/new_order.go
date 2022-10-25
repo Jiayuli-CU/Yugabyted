@@ -5,6 +5,7 @@ import (
 	"cs5424project/store/models"
 	"fmt"
 	"github.com/gocql/gocql"
+	"github.com/pkg/errors"
 	"log"
 	"time"
 )
@@ -15,6 +16,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 	var warehouse *models.Warehouse
 	var customer *models.Customer
 	var district *models.District
+	var orderId int
 	var err error
 
 	local := 1
@@ -27,26 +29,46 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 
 	ctx := context.Background()
 
-	if err = session.Query(`SELECT * FROM warehouses WHERE id = ? LIMIT 1`, warehouseId).WithContext(ctx).Consistency(gocql.Quorum).Scan(warehouse); err != nil {
-		log.Printf("Find warehouse error: %v\n", err)
+	if err = session.Query(`SELECT warehouse_tax_rate, district_tax_rate, next_order_number FROM districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).Consistency(gocql.Quorum).Scan(&warehouseTax, &districtTax, &orderId); err != nil {
+		log.Printf("Find district error: %v\n", err)
 		return err
 	}
 	warehouseTax = warehouse.TaxRate
 
-	if err = session.Query(`SELECT * FROM districts WHERE id = ? LIMIT 1`, districtId).WithContext(ctx).Consistency(gocql.Quorum).Scan(district); err != nil {
-		log.Printf("Find district error: %v\n", err)
-		return err
-	}
-	orderId := district.NextAvailableOrderNumber
-	districtTax = district.TaxRate
+	//if err = session.Query(`SELECT * FROM districts WHERE id = ? LIMIT 1`, districtId).WithContext(ctx).Consistency(gocql.Quorum).Scan(district); err != nil {
+	//	log.Printf("Find district error: %v\n", err)
+	//	return err
+	//}
+	////orderId := district.NextAvailableOrderNumber
+	//districtTax = district.TaxRate
 	if err = session.Query(`UPDATE districts SET next_available_order_number = ? WHERE id = ?`, orderId+1, districtId).
 		WithContext(ctx).Exec(); err != nil {
 		log.Printf("Update next_available_order_number failed: %v\n", err)
 		return err
 	}
 
-	if err = session.Query(`SELECT * FROM customers WHERE id = ? AND warehouse_id = ? AND district_id = ? LIMIT 1`, customerId, warehouseId, districtId).
-		WithContext(ctx).Consistency(gocql.Quorum).Scan(customer); err != nil {
+	//CAS to handle concurrent read and write
+	//try 10 times
+	i := 0
+	for ; i < 10; i++ {
+		err = session.Query(`UPDATE districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, orderId+1, warehouseId, districtId, orderId).
+			WithContext(ctx).Exec()
+		if err == nil {
+			break
+		}
+		err = session.Query(`SELECT next_order_number FROM districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).Consistency(gocql.Quorum).Scan(&orderId)
+		if err != nil {
+			log.Printf("Find district error: %v\n", err)
+			return err
+		}
+	}
+
+	if i == 10 {
+		return errors.Errorf("fail to get and update order id")
+	}
+
+	if err = session.Query(`SELECT discount_rate FROM customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
+		WithContext(ctx).Consistency(gocql.Quorum).Scan(&discount); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
 	}
@@ -54,7 +76,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 
 	//create new order
 	newOrder := &models.Order{
-		Id:          orderId,
+		Id:          uint64(orderId),
 		DistrictId:  districtId,
 		WarehouseId: warehouseId,
 		CustomerId:  customerId,
@@ -63,44 +85,51 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 		Status:      local,
 	}
 
-	if err = session.Query(`INSERT INTO orders (id, warehouse_id, district_id, customer_id, carrier_id, items_number, status, entry_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		newOrder.Id, newOrder.WarehouseId, newOrder.DistrictId, newOrder.CustomerId, newOrder.CarrierId, newOrder.ItemsNumber, newOrder.Status, newOrder.EntryTime).
-		WithContext(ctx).Exec(); err != nil {
-		log.Fatal(err)
-	}
+	//if err = session.Query(`INSERT INTO orders (id, warehouse_id, district_id, customer_id, carrier_id, items_number, status, entry_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+	//	newOrder.Id, newOrder.WarehouseId, newOrder.DistrictId, newOrder.CustomerId, newOrder.CarrierId, newOrder.ItemsNumber, newOrder.Status, newOrder.EntryTime).
+	//	WithContext(ctx).Exec(); err != nil {
+	//	log.Fatal(err)
+	//}
+
+	var stockQuantity int
+	var itemPrice float64
 
 	for idx, itemNumber := range itemNumbers {
 
 		wId := supplierWarehouses[idx]
 		quantity := quantities[idx]
 
-		stock := &models.Stock{}
-		if err = session.Query(`SELECT * FROM stocks WHERE warehouse_id = ? AND item_id = ? LIMIT 1`, wId, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(stock); err != nil {
-			log.Printf("Find district error: %v\n", err)
-			return err
-		}
+		//stock := &models.Stock{}
+		//if err = session.Query(`SELECT quantity FROM stock_counter WHERE warehouse_id = ? AND item_id = ? LIMIT 1`, wId, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(&stockQuantity); err != nil {
+		//	log.Printf("Find district error: %v\n", err)
+		//	return err
+		//}
 
-		// update stock
-		stockQuantity := stock.Quantity
-		adjustedQuantity := stockQuantity - quantity
-		if adjustedQuantity < 10 {
-			adjustedQuantity += 100
-		}
-		stock.Quantity = adjustedQuantity
-		stock.OrdersNumber += 1
+		//update stock info
+
+		b := session.NewBatch(gocql.CounterBatch).WithContext(ctx)
+		var stmt string
 		if wId != warehouseId {
-			stock.RemoteOrdersNumber += 1
+			stmt = "UPDATE stock_counter SET quantity = quantity - ?, order_count = order_count + 1 WHERE warehouse_id = ? AND item_id = ?"
+		} else {
+			stmt = "UPDATE stock_counter SET quantity = quantity - ?, order_count = order_count + 1, remote_count = remote_count + 1 WHERE warehouse_id = ? AND item_id = ?"
 		}
-		stock.YearToDateQuantityOrdered += quantity
-		// 此处更新有无更好办法？
-		if err = session.Query(`UPDATE stocks SET quantity = ? AND orders_number = ? AND remote_orders_number = ? WHERE warehouse_id = ? AND item_id = ?`, stock.Quantity, stock.OrdersNumber, stock.RemoteOrdersNumber, wId, itemNumber).
-			WithContext(ctx).Exec(); err != nil {
-			log.Printf("Update stock failed: %v\n", err)
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       stmt,
+			Args:       []interface{}{quantity, warehouseId, itemNumber},
+			Idempotent: false,
+		})
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       "UPDATE stock_counter SET quantity = quantity + 100 WHERE warehouse_id = ? AND item_id = ? IF quantity < 10",
+			Args:       []interface{}{warehouseId, itemNumber},
+			Idempotent: false,
+		})
+		err = session.ExecuteBatch(b)
+		if err != nil {
 			return err
 		}
 
 		// calculate item and total amount
-		item := &models.Item{}
 		if err = session.Query(`SELECT * FROM items WHERE id = ? LIMIT 1`, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(item); err != nil {
 			log.Printf("Find item error: %v\n", err)
 			return err
