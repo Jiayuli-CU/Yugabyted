@@ -1,7 +1,7 @@
 package postgre
 
 import (
-	"cs5424project/store/postgre"
+	"cs5424project/store/models"
 	"gorm.io/gorm"
 	"log"
 	"time"
@@ -22,23 +22,23 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 		//			  items placed in order X
 		//			• Increment C_DELIVERY_CNT by 1
 		for districtId := 1; districtId <= 10; districtId++ {
-			var order postgre.Order
-			if err := tx.Model(&postgre.Order{}).Where("carrier_id = null AND warehouse_id = ? AND district_id = ?", warehouseId, districtId).First(&order).Error; err != nil {
+			var order models.Order
+			if err := tx.Model(&models.Order{}).Where("carrier_id = null AND warehouse_id = ? AND district_id = ?", warehouseId, districtId).First(&order).Error; err != nil {
 				log.Printf("First order error: %v\n", err)
 				return err
 			}
-			var customer postgre.Customer
-			if err := tx.Model(&postgre.Customer{}).Where("id = ? AND warehouse_id = ? AND district_id = ?", order.CustomerId, order.WarehouseId, order.DistrictId).Find(&customer).Error; err != nil {
+			var customer models.Customer
+			if err := tx.Model(&models.Customer{}).Where("id = ? AND warehouse_id = ? AND district_id = ?", order.CustomerId, order.WarehouseId, order.DistrictId).Find(&customer).Error; err != nil {
 				log.Printf("Find customer error: %v\n", err)
 				return err
 			}
 			order.CarrierId = carrierId
-			if err := tx.Model(&postgre.Order{}).Where("id = ? AND warehouse_id = ? AND district_id = ?", order.Id, order.WarehouseId, order.DistrictId).Updates(&order).Error; err != nil {
+			if err := tx.Model(&models.Order{}).Where("id = ? AND warehouse_id = ? AND district_id = ?", order.Id, order.WarehouseId, order.DistrictId).Updates(&order).Error; err != nil {
 				log.Printf("Update order error: %v\n", err)
 				return err
 			}
-			var orderLines []postgre.OrderLine
-			if err := tx.Model(&postgre.OrderLine{}).Where("warehouse_id = ? AND district_id = ? AND order_id = ?", order.WarehouseId, order.DistrictId, order.Id).Find(&orderLines).Error; err != nil {
+			var orderLines []models.OrderLine
+			if err := tx.Model(&models.OrderLine{}).Where("warehouse_id = ? AND district_id = ? AND order_id = ?", order.WarehouseId, order.DistrictId, order.Id).Find(&orderLines).Error; err != nil {
 				log.Printf("Find order lines error: %v\n", err)
 				return err
 			}
@@ -46,14 +46,14 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 			for _, orderLine := range orderLines {
 				orderLine.DeliveryTime = time.Now()
 				totalAmount += orderLine.Price
-				if err := tx.Model(&postgre.OrderLine{}).Where("warehouse_id = ? AND district_id = ? AND order_id = ? AND id = ?", orderLine.WarehouseId, orderLine.DistrictId, orderLine.OrderId, orderLine.Id).Updates(&orderLine).Error; err != nil {
+				if err := tx.Model(&models.OrderLine{}).Where("warehouse_id = ? AND district_id = ? AND order_id = ? AND id = ?", orderLine.WarehouseId, orderLine.DistrictId, orderLine.OrderId, orderLine.Id).Updates(&orderLine).Error; err != nil {
 					log.Printf("Update order line error: %v\n", err)
 					return err
 				}
 			}
 			customer.Balance += totalAmount
 			customer.DeliveriesNumber++
-			if err := tx.Model(&postgre.Customer{}).Where("warehouse_id = ? AND district_id = ? AND id = ?", customer.WarehouseId, customer.DistrictId, customer.Id).Updates(&customer).Error; err != nil {
+			if err := tx.Model(&models.Customer{}).Where("warehouse_id = ? AND district_id = ? AND id = ?", customer.WarehouseId, customer.DistrictId, customer.Id).Updates(&customer).Error; err != nil {
 				log.Printf("Update customer error: %v\n", err)
 				return err
 			}

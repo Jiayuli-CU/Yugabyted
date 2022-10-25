@@ -1,13 +1,13 @@
 package postgre
 
 import (
-	"cs5424project/store/postgre"
+	"cs5424project/store/models"
 	"log"
 )
 
 func Top10Balance() error {
 
-	var customers []postgre.Customer
+	var customers []models.Customer
 
 	err := db.Limit(10).Order("balance desc").Find(&customers).Error
 

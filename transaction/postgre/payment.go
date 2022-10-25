@@ -1,7 +1,7 @@
 package postgre
 
 import (
-	"cs5424project/store/postgre"
+	"cs5424project/store/models"
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
@@ -14,8 +14,8 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		// 		• Decrement C_BALANCE by PAYMENT
 		// 		• Increment C_YTD_PAYMENT by PAYMENT
 		// 		• Increment C_PAYMENT_CNT by 1
-		var customer postgre.Customer
-		if err := tx.Model(&postgre.Customer{}).
+		var customer models.Customer
+		if err := tx.Model(&models.Customer{}).
 			Where("id = ? AND warehouse_id = ? AND district_id = ?", customerId, warehouseId, districtId).
 			Find(&customer).Error; err != nil {
 			log.Printf("Find customer error: %v\n", err)
@@ -27,7 +27,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		customer.Balance -= payment
 		customer.YearToDatePayment += payment
 		customer.PaymentsNumber++
-		if err := tx.Model(&postgre.Customer{}).
+		if err := tx.Model(&models.Customer{}).
 			Where("id = ? AND warehouse_id = ? AND district_id = ?", customerId, warehouseId, districtId).
 			Updates(&customer).Error; err != nil {
 			log.Printf("Update customer error: %v\n", err)
@@ -35,15 +35,15 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		}
 
 		// 2. Update the warehouse C_W_ID by incrementing W_YTD by PAYMENT
-		var warehouse postgre.Warehouse
-		if err := tx.Model(&postgre.Warehouse{}).
+		var warehouse models.Warehouse
+		if err := tx.Model(&models.Warehouse{}).
 			Where("id = ?", warehouseId).
 			Find(&warehouse).Error; err != nil {
 			log.Printf("Find warehouse error: %v\n", err)
 			return err
 		}
 		warehouse.YearToDateAmount += payment
-		if err := tx.Model(&postgre.Warehouse{}).
+		if err := tx.Model(&models.Warehouse{}).
 			Where("id = ?", warehouseId).
 			Updates(&warehouse).Error; err != nil {
 			log.Printf("Update warehouse error: %v\n", err)
@@ -51,15 +51,15 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		}
 
 		// 3. Update the district (C_W_ID,C_D_ID) by incrementing D_YTD by PAYMENT
-		var district postgre.District
-		if err := tx.Model(&postgre.District{}).
+		var district models.District
+		if err := tx.Model(&models.District{}).
 			Where("id = ? AND warehouse_id = ?", districtId, warehouseId).
 			Find(&district).Error; err != nil {
 			log.Printf("Find district error: %v\n", err)
 			return err
 		}
 		district.YearToDateAmount += payment
-		if err := tx.Model(&postgre.District{}).
+		if err := tx.Model(&models.District{}).
 			Where("id = ? AND warehouse_id = ?", districtId, warehouseId).
 			Updates(&district).Error; err != nil {
 			log.Printf("Update district error: %v\n", err)

@@ -1,6 +1,7 @@
 package postgre
 
 import (
+	"cs5424project/store/models"
 	"fmt"
 	"log"
 
@@ -66,7 +67,7 @@ func initMigrations(db *gorm.DB) {
 	//if err != nil {
 	//	log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
 	//}
-	err = db.AutoMigrate(&Stock{})
+	err = db.AutoMigrate(&models.Stock{})
 	if err != nil {
 		log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
 	}

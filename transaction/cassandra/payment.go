@@ -1,7 +1,7 @@
 package cassandra
 
 import (
-	"cs5424project/store/postgre"
+	"cs5424project/store/models"
 	"errors"
 	"fmt"
 	"github.com/gocql/gocql"
@@ -13,7 +13,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 	// 		• Decrement C_BALANCE by PAYMENT
 	// 		• Increment C_YTD_PAYMENT by PAYMENT
 	// 		• Increment C_PAYMENT_CNT by 1
-	var customer postgre.Customer
+	var customer models.Customer
 	if err := session.Query(fmt.Sprintf(`SELECT * FROM customers WHERE id = %v AND warehouse_id = %v AND district_id = %v`, customerId, warehouseId, districtId)).
 		Consistency(gocql.Quorum).Scan(&customer); err != nil {
 		log.Printf("Find customer error: %v\n", err)
@@ -32,7 +32,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 	}
 
 	// 2. Update the warehouse C_W_ID by incrementing W_YTD by PAYMENT
-	var warehouse postgre.Warehouse
+	var warehouse models.Warehouse
 	if err := session.Query(fmt.Sprintf(`SELECT * FROM warehouses WHERE id = %v`, warehouseId)).
 		Consistency(gocql.Quorum).Scan(&warehouse); err != nil {
 		log.Printf("Find warehouse error: %v\n", err)
@@ -46,7 +46,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 	}
 
 	// 3. Update the district (C_W_ID,C_D_ID) by incrementing D_YTD by PAYMENT
-	var district postgre.District
+	var district models.District
 	if err := session.Query(fmt.Sprintf(`SELECT * FROM districts WHERE id = %v AND warehouse_id = %v`, district, warehouseId)).
 		Consistency(gocql.Quorum).Scan(&district); err != nil {
 		log.Printf("Find district error: %v\n", err)

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"cs5424project/store/models"
 	"cs5424project/store/postgre"
 	"time"
 
@@ -28,12 +29,12 @@ func LoadWarehouse() {
 		panic(err)
 	}
 
-	warehouses := make([]postgre.Warehouse, len(record))
+	warehouses := make([]models.Warehouse, len(record))
 	for i, w := range record {
 		id, _ := strconv.ParseUint(w[0], 10, 64)
 		taxRate, _ := strconv.ParseFloat(w[7], 32)
 		yearToDateAmount, _ := strconv.ParseFloat(w[8], 32)
-		warehouses[i] = postgre.Warehouse{
+		warehouses[i] = models.Warehouse{
 			Id:               id,
 			Name:             w[1],
 			StreetLine1:      w[2],
@@ -65,8 +66,8 @@ func LoadDistrict() {
 		panic(err)
 	}
 
-	var districts []postgre.District
-	districts = make([]postgre.District, len(records))
+	var districts []models.District
+	districts = make([]models.District, len(records))
 	for i, record := range records {
 		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
 		id, _ := strconv.ParseUint(record[1], 10, 64)
@@ -74,7 +75,7 @@ func LoadDistrict() {
 		yearToDateAmount, _ := strconv.ParseFloat(record[9], 32)
 		nextAvailableOrderNumber, _ := strconv.ParseUint(record[10], 10, 64)
 
-		districts[i] = postgre.District{
+		districts[i] = models.District{
 			Id:                       id,
 			WarehouseId:              wareHouseId,
 			Name:                     record[2],
@@ -106,8 +107,8 @@ func LoadCustomer() {
 		panic(err)
 	}
 
-	var customers []postgre.Customer
-	customers = make([]postgre.Customer, len(records))
+	var customers []models.Customer
+	customers = make([]models.Customer, len(records))
 
 	for i, record := range records {
 		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
@@ -121,7 +122,7 @@ func LoadCustomer() {
 		paymentsNumber, _ := strconv.ParseUint(record[18], 10, 64)
 		deliveriesNumber, _ := strconv.ParseUint(record[19], 10, 64)
 
-		customers[i] = postgre.Customer{
+		customers[i] = models.Customer{
 			Id:                id,
 			WarehouseId:       wareHouseId,
 			DistrictId:        districtId,
@@ -163,8 +164,8 @@ func LoadItem() {
 		panic(err)
 	}
 
-	var items []postgre.Item
-	items = make([]postgre.Item, len(records))
+	var items []models.Item
+	items = make([]models.Item, len(records))
 	fmt.Println(len(records))
 
 	for i, record := range records {
@@ -172,7 +173,7 @@ func LoadItem() {
 		price, _ := strconv.ParseFloat(record[2], 32)
 		imageId, _ := strconv.ParseUint(record[3], 10, 64)
 
-		items[i] = postgre.Item{
+		items[i] = models.Item{
 			Id:      id,
 			Name:    record[1],
 			Price:   price,
@@ -200,8 +201,8 @@ func LoadStock() {
 		panic(err)
 	}
 
-	var stocks []postgre.Stock
-	stocks = make([]postgre.Stock, len(records))
+	var stocks []models.Stock
+	stocks = make([]models.Stock, len(records))
 	for i, record := range records {
 		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
 		itemId, _ := strconv.ParseUint(record[1], 10, 64)
@@ -210,7 +211,7 @@ func LoadStock() {
 		ordersNumber, _ := strconv.ParseUint(record[4], 10, 64)
 		remoteOrdersNumber, _ := strconv.ParseUint(record[5], 10, 64)
 
-		stocks[i] = postgre.Stock{
+		stocks[i] = models.Stock{
 			WarehouseId:               wareHouseId,
 			ItemId:                    itemId,
 			Quantity:                  int(quantity),
@@ -253,7 +254,7 @@ func LoadOrder() {
 		panic(err)
 	}
 
-	orders := make([]postgre.Order, len(record))
+	orders := make([]models.Order, len(record))
 
 	var warehouseId, districtId, id, customerId, carrierId, itemNumber uint64
 
@@ -271,7 +272,7 @@ func LoadOrder() {
 		entryTime, _ := time.ParseInLocation("2006-01-02 15:04:05", o[7], time.Local)
 		status, _ := strconv.ParseUint(o[6], 10, 64)
 
-		orders[i] = postgre.Order{
+		orders[i] = models.Order{
 			WarehouseId: warehouseId,
 			DistrictId:  districtId,
 			Id:          id,
@@ -302,7 +303,7 @@ func LoadOrderLine() error {
 		panic(err)
 	}
 
-	var orderlines = make([]postgre.OrderLine, 100000)
+	var orderlines = make([]models.OrderLine, 100000)
 	//var orderlines []models.OrderLine
 
 	// var warehouseId, districtId, orderId, id, itemId, supplyWarehouseId uint64
@@ -318,7 +319,7 @@ func LoadOrderLine() error {
 			if err != nil {
 				return err
 			}
-			orderlines = make([]postgre.OrderLine, 100000)
+			orderlines = make([]models.OrderLine, 100000)
 		}
 		i = i % 100000
 		warehouseId, _ := strconv.ParseUint(ol[0], 10, 64)
@@ -335,7 +336,7 @@ func LoadOrderLine() error {
 		supplyWarehouseId, _ := strconv.ParseUint(ol[7], 10, 64)
 		quantity, _ := strconv.ParseInt(ol[8], 10, 64)
 
-		orderlines[i] = postgre.OrderLine{
+		orderlines[i] = models.OrderLine{
 			WarehouseId:       warehouseId,
 			DistrictId:        districtId,
 			OrderId:           orderId,

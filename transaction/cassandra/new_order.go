@@ -2,7 +2,7 @@ package cassandra
 
 import (
 	"context"
-	"cs5424project/store/postgre"
+	"cs5424project/store/models"
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
@@ -12,9 +12,9 @@ import (
 func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
 
 	var warehouseTax, districtTax, discount, totalAmount float64
-	var warehouse *postgre.Warehouse
-	var customer *postgre.Customer
-	var district *postgre.District
+	var warehouse *models.Warehouse
+	var customer *models.Customer
+	var district *models.District
 	var err error
 
 	local := 1
@@ -53,7 +53,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 	discount = customer.DiscountRate
 
 	//create new order
-	newOrder := &postgre.Order{
+	newOrder := &models.Order{
 		Id:          orderId,
 		DistrictId:  districtId,
 		WarehouseId: warehouseId,
@@ -74,7 +74,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 		wId := supplierWarehouses[idx]
 		quantity := quantities[idx]
 
-		stock := &postgre.Stock{}
+		stock := &models.Stock{}
 		if err = session.Query(`SELECT * FROM stocks WHERE warehouse_id = ? AND item_id = ? LIMIT 1`, wId, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(stock); err != nil {
 			log.Printf("Find district error: %v\n", err)
 			return err
@@ -100,7 +100,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 		}
 
 		// calculate item and total amount
-		item := &postgre.Item{}
+		item := &models.Item{}
 		if err = session.Query(`SELECT * FROM items WHERE id = ? LIMIT 1`, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(item); err != nil {
 			log.Printf("Find item error: %v\n", err)
 			return err
@@ -109,7 +109,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 		//itemAmount, _ := decimal.NewFromInt(int64(quantities[idx])).Mul(decimal.NewFromFloat(item.Price)).Float64()
 		totalAmount += itemAmount
 
-		orderLine := &postgre.OrderLine{
+		orderLine := &models.OrderLine{
 			OrderId:           orderId,
 			DistrictId:        districtId,
 			WarehouseId:       warehouseId,
