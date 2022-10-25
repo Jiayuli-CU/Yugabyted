@@ -15,7 +15,7 @@ const (
 func init() {
 	var err error
 	cluster := gocql.NewCluster("ap-southeast-1.cffa655e-246b-4910-bb38-38d762998390.aws.ybdb.io")
-	cluster.Keyspace = keySpace
+	//cluster.Keyspace = keySpace
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 	cluster.Authenticator = gocql.PasswordAuthenticator{
