@@ -101,4 +101,17 @@ func createSchema() {
 		return
 	}
 
+	createItemsCmd := "CREATE TABLE IF NOT EXISTS cs5424_groupI.items (" +
+		" item_id int, " +
+		" item_name text, " +
+		" item_price decimal, " +
+		" item_image_identifier int, " +
+		" item_data text, " +
+		" PRIMARY KEY (item_id) " +
+		" );"
+	err = session.Query(createItemsCmd).Exec()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
