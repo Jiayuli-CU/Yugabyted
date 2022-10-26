@@ -2,19 +2,19 @@ package cassandra
 
 import (
 	"context"
-	"cs5424project/store/models"
+	"cs5424project/store/cassandra"
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
 	"time"
 )
 
-func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
+func NewOrder(warehouseId, districtId, customerId, total int, itemNumbers, supplierWarehouses []int, quantities []int) error {
 
-	var warehouseTax, districtTax, discount, totalAmount float64
-	var warehouse *models.Warehouse
-	var customer *models.Customer
-	var district *models.District
+	var warehouseTax, districtTax, discount float32
+	var totalAmountInt int
+	var orderLines []cassandra.OrderLine
+	var orderId int
 	var err error
 
 	local := 1
@@ -27,108 +27,90 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 
 	ctx := context.Background()
 
-	if err = session.Query(`SELECT * FROM warehouses WHERE id = ? LIMIT 1`, warehouseId).WithContext(ctx).Consistency(gocql.Quorum).Scan(warehouse); err != nil {
-		log.Printf("Find warehouse error: %v\n", err)
-		return err
-	}
-	warehouseTax = warehouse.TaxRate
+	//CAS to handle concurrent read and write
+	for {
+		err = session.Query(`SELECT warehouse_tax, district_tax, next_order_number FROM districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).Consistency(gocql.Quorum).
+			Scan(&warehouseTax, &districtTax, &orderId)
+		if err != nil {
+			log.Printf("Find district error: %v\n", err)
+			continue
+		}
 
-	if err = session.Query(`SELECT * FROM districts WHERE id = ? LIMIT 1`, districtId).WithContext(ctx).Consistency(gocql.Quorum).Scan(district); err != nil {
-		log.Printf("Find district error: %v\n", err)
-		return err
-	}
-	orderId := district.NextAvailableOrderNumber
-	districtTax = district.TaxRate
-	if err = session.Query(`UPDATE districts SET next_available_order_number = ? WHERE id = ?`, orderId+1, districtId).
-		WithContext(ctx).Exec(); err != nil {
-		log.Printf("Update next_available_order_number failed: %v\n", err)
-		return err
+		err = session.Query(`UPDATE districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, orderId+1, warehouseId, districtId, orderId).
+			WithContext(ctx).Exec()
+		if err == nil {
+			break
+		}
 	}
 
-	if err = session.Query(`SELECT * FROM customers WHERE id = ? AND warehouse_id = ? AND district_id = ? LIMIT 1`, customerId, warehouseId, districtId).
-		WithContext(ctx).Consistency(gocql.Quorum).Scan(customer); err != nil {
+	if err = session.Query(`SELECT discount_rate FROM customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
+		WithContext(ctx).Consistency(gocql.Quorum).Scan(&discount); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
 	}
-	discount = customer.DiscountRate
 
-	//create new order
-	newOrder := &models.Order{
-		Id:          orderId,
-		DistrictId:  districtId,
-		WarehouseId: warehouseId,
-		CustomerId:  customerId,
-		EntryTime:   time.Now(),
-		ItemsNumber: total,
-		Status:      local,
-	}
-
-	if err = session.Query(`INSERT INTO orders (id, warehouse_id, district_id, customer_id, carrier_id, items_number, status, entry_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		newOrder.Id, newOrder.WarehouseId, newOrder.DistrictId, newOrder.CustomerId, newOrder.CarrierId, newOrder.ItemsNumber, newOrder.Status, newOrder.EntryTime).
-		WithContext(ctx).Exec(); err != nil {
-		log.Fatal(err)
-	}
+	var itemPrice float32
 
 	for idx, itemNumber := range itemNumbers {
 
 		wId := supplierWarehouses[idx]
 		quantity := quantities[idx]
 
-		stock := &models.Stock{}
-		if err = session.Query(`SELECT * FROM stocks WHERE warehouse_id = ? AND item_id = ? LIMIT 1`, wId, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(stock); err != nil {
-			log.Printf("Find district error: %v\n", err)
-			return err
+		//update stock info
+		b := session.NewBatch(gocql.CounterBatch).WithContext(ctx)
+		var stmt string
+		if wId == warehouseId {
+			stmt = "UPDATE stock_counters SET quantity = quantity - ?, order_count = order_count + 1 WHERE warehouse_id = ? AND item_id = ?"
+		} else {
+			stmt = "UPDATE stock_counters SET quantity = quantity - ?, order_count = order_count + 1, remote_count = remote_count + 1 WHERE warehouse_id = ? AND item_id = ?"
 		}
-
-		// update stock
-		stockQuantity := stock.Quantity
-		adjustedQuantity := stockQuantity - quantity
-		if adjustedQuantity < 10 {
-			adjustedQuantity += 100
-		}
-		stock.Quantity = adjustedQuantity
-		stock.OrdersNumber += 1
-		if wId != warehouseId {
-			stock.RemoteOrdersNumber += 1
-		}
-		stock.YearToDateQuantityOrdered += quantity
-		// 此处更新有无更好办法？
-		if err = session.Query(`UPDATE stocks SET quantity = ? AND orders_number = ? AND remote_orders_number = ? WHERE warehouse_id = ? AND item_id = ?`, stock.Quantity, stock.OrdersNumber, stock.RemoteOrdersNumber, wId, itemNumber).
-			WithContext(ctx).Exec(); err != nil {
-			log.Printf("Update stock failed: %v\n", err)
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       stmt,
+			Args:       []interface{}{quantity, warehouseId, itemNumber},
+			Idempotent: false,
+		})
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       "UPDATE stock_counters SET quantity = quantity + 100 WHERE warehouse_id = ? AND item_id = ? IF quantity < 10",
+			Args:       []interface{}{warehouseId, itemNumber},
+			Idempotent: false,
+		})
+		err = session.ExecuteBatch(b)
+		if err != nil {
 			return err
 		}
 
 		// calculate item and total amount
-		item := &models.Item{}
-		if err = session.Query(`SELECT * FROM items WHERE id = ? LIMIT 1`, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(item); err != nil {
+		if err = session.Query(`SELECT price FROM items WHERE item_id = ? LIMIT 1`, itemNumber).WithContext(ctx).Consistency(gocql.Quorum).Scan(&itemPrice); err != nil {
 			log.Printf("Find item error: %v\n", err)
 			return err
 		}
-		itemAmount := float64(quantity) * item.Price
+		itemAmountInt := quantity * int(itemPrice*100)
 		//itemAmount, _ := decimal.NewFromInt(int64(quantities[idx])).Mul(decimal.NewFromFloat(item.Price)).Float64()
-		totalAmount += itemAmount
+		totalAmountInt += itemAmountInt
 
-		orderLine := &models.OrderLine{
-			OrderId:           orderId,
-			DistrictId:        districtId,
-			WarehouseId:       warehouseId,
-			Id:                uint64(idx + 1),
+		orderLine := cassandra.OrderLine{
+			OrderLineId:       idx + 1,
 			ItemId:            itemNumber,
-			SupplyNumber:      wId,
+			SupplyWarehouseId: wId,
 			Quantity:          quantity,
-			Price:             itemAmount,
+			AmountInt:         itemAmountInt,
 			MiscellaneousData: fmt.Sprintf("S_DIST_%d", districtId),
 		}
-
-		if err = session.Query(`INSERT INTO order_lines (id, warehouse_id, district_id, order_id, item_id, delivery_time, price, supply_number, quantity, miscellaneous_data) 
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			orderLine.Id, orderLine.WarehouseId, orderLine.DistrictId, orderLine.OrderId, orderLine.ItemId, orderLine.DeliveryTime, orderLine.Price, orderLine.SupplyNumber, orderLine.MiscellaneousData).
-			WithContext(ctx).Exec(); err != nil {
-			log.Fatal(err)
-		}
+		orderLines = append(orderLines, orderLine)
 	}
 
-	totalAmount = totalAmount * (1 + warehouseTax + districtTax) * (1 - discount)
+	if err = session.Query(`INSERT INTO orders (warehouse_id, district_id, customer_id, customer_id, carrier_id, items_number, status, entry_time, order_lines, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		warehouseId, districtId, customerId, total, local, time.Now(), orderLines, totalAmountInt).
+		WithContext(ctx).Exec(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = session.Query(`UPDATE customers SET last_order_id = ? WHERE warehouse_id =? AND district_id = ? AND customer_id = ?`, orderId, warehouseId, districtId, customerId).
+		WithContext(ctx).Exec(); err != nil {
+		log.Fatal(err)
+	}
+
+	totalAmount := float32(totalAmountInt) * (1 + warehouseTax + districtTax) * (1 - discount)
+	fmt.Println(totalAmount)
 	return nil
 }

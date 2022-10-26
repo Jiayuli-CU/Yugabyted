@@ -2,8 +2,6 @@ package cassandra
 
 import (
 	"cs5424project/store/cassandra"
-	"cs5424project/store/models"
-	"fmt"
 	"github.com/gocql/gocql"
 	"log"
 	"time"
@@ -11,7 +9,7 @@ import (
 
 var session = cassandra.GetSession()
 
-func DeliveryTransaction(warehouseId, carrierId uint64) error {
+func DeliveryTransaction(warehouseId, carrierId int) error {
 	// 1. For DISTRICT_NO = 1 to 10
 	// 		(a) Let N denote the value of the smallest order number O_ID for district (W_ID,DISTRICT_NO)
 	//			with O_CARRIER_ID = null; i.e.,
@@ -24,46 +22,57 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 	//			• Increment C_BALANCE by B, where B denote the sum of OL_AMOUNT for all the
 	//			  items placed in order X
 	//			• Increment C_DELIVERY_CNT by 1
+
+	var err error
+
+	deliveryOrderIds := make([]int, 10)
+	b := session.NewBatch(gocql.CounterBatch)
+
 	for districtId := 1; districtId <= 10; districtId++ {
-		var order models.Order
-		if err := session.Query(fmt.Sprintf(`SELECT * FROM orders WHERE carrier_id = null AND warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)).
-			Consistency(gocql.Quorum).Scan(&order); err != nil {
-			log.Printf("First order error: %v\n", err)
-			return err
-		}
-		var customer models.Customer
-		if err := session.Query(fmt.Sprintf(`SELECT * FROM customers WHERE id = %v AND warehouse_id = %v AND district_id = %v`, order.CustomerId, order.WarehouseId, order.DistrictId)).
-			Consistency(gocql.Quorum).Scan(&customer); err != nil {
-			log.Printf("Find customer error: %v\n", err)
-			return err
-		}
-		if err := session.Query(fmt.Sprintf(`UPDATE customers SET carrier_id = %v WHERE id = %v AND warehouse_id = %v AND district_id = %v`, carrierId, customer.Id, customer.WarehouseId, customer.DistrictId)).
-			Consistency(gocql.Quorum).Exec(); err != nil {
-			log.Printf("Update order error: %v\n", err)
-			return err
-		}
-		var orderLines []models.OrderLine
-		if err := session.Query(fmt.Sprintf(`SELECT * FROM orderlines WHERE warehouse_id = %v AND district_id = %v AND order_id = %v`, order.WarehouseId, order.DistrictId, order.Id)).
-			Consistency(gocql.Quorum).Scan(&orderLines); err != nil {
-			log.Printf("Find order lines error: %v\n", err)
-			return err
-		}
-		totalAmount := customer.Balance
-		for _, orderLine := range orderLines {
-			orderLine.DeliveryTime = time.Now()
-			totalAmount += orderLine.Price
-			if err := session.Query(fmt.Sprintf(`UPDATE orderlines SET delivery_time = %v WHERE warehouse_id = %v AND district_id = %v AND order_id = %v AND id = %v`, time.Now(), orderLine.WarehouseId, orderLine.DistrictId, orderLine.OrderId, orderLine.Id)).
-				Consistency(gocql.Quorum).Exec(); err != nil {
-				log.Printf("Update order line error: %v\n", err)
-				return err
+		deliveryOrderId := 0
+		for {
+			err = session.Query(`SELECT next_delivery_order_id FROM districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).Consistency(gocql.Quorum).
+				Scan(&deliveryOrderId)
+			if err != nil {
+				log.Printf("Find district error: %v\n", err)
+				continue
+			}
+
+			err = session.Query(`UPDATE districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+				Exec()
+			if err == nil {
+				deliveryOrderIds[districtId-1] = deliveryOrderId
+				break
 			}
 		}
-		deliveryNumber := customer.DeliveriesNumber + 1
-		if err := session.Query(fmt.Sprintf(`UPDATE customers SET balance = %v, deliveries_number = %v WHERE warehouse_id = %v AND district_id = %v AND id = %v`, totalAmount, deliveryNumber, customer.WarehouseId, customer.DistrictId, customer.Id)).
-			Consistency(gocql.Quorum).Exec(); err != nil {
+
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       "UPDATE orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
+			Args:       []interface{}{carrierId, time.Now(), warehouseId, districtId, deliveryOrderId},
+			Idempotent: true,
+		})
+	}
+
+	err = session.ExecuteBatch(b)
+	if err != nil {
+		return err
+	}
+
+	var totalAmountInt int
+	var customerId int
+
+	for i, orderId := range deliveryOrderIds {
+		if err = session.Query(`SELECT customer_id, total_amount FROM orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
+			Scan(&customerId, &totalAmountInt); err != nil {
+			log.Printf("Find order error: %v\n", err)
+			return err
+		}
+
+		if err = session.Query(`UPDATE customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?`, totalAmountInt, 1).Exec(); err != nil {
 			log.Printf("Update customer error: %v\n", err)
 			return err
 		}
 	}
+
 	return nil
 }

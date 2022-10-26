@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cs5424project/store/postgre"
+	"cs5424project/store/cassandra"
 	"fmt"
 )
 
@@ -20,6 +20,12 @@ func main() {
 	//
 	//wg.Wait()
 	//fmt.Println("main exit")
-	db := postgre.GetDB()
-	fmt.Println(db)
+	defer cassandra.CloseSession()
+	err := cassandra.QueryTest()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("good")
+	}
+
 }
