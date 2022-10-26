@@ -3,7 +3,6 @@ package cassandra
 import (
 	"cs5424project/store/cassandra"
 	"fmt"
-	"github.com/deckarep/golang-set"
 	"github.com/gocql/gocql"
 	"log"
 )
@@ -22,7 +21,7 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 	}
 
 	// collect the set of itemIds
-	itemIds := mapset.NewSet[int]()
+	itemIds := map[int]bool{}
 	var orderLines []cassandra.OrderLine
 
 	for orderNumber := nextOrderNumber - numOrders; orderNumber < nextOrderNumber; orderNumber++ {
@@ -36,12 +35,12 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 		}
 
 		for _, orderLine := range orderLines {
-			itemIds.Add(orderLine.ItemId)
+			itemIds[orderLine.ItemId] = true
 		}
 	}
 
 	// check storage
-	for itemId := range itemIds.Iterator().C {
+	for itemId, _ := range itemIds {
 		// get the stock number of this item
 		var stockQuantity int
 		GetItemStockQuantityQuery := fmt.Sprintf(`SELECT quantity FROM stock_counter WHERE warehouse_id = %v AND item_id = %v LIMIT 1`, warehouseId, itemId)
