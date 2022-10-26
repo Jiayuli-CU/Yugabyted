@@ -1,7 +1,6 @@
 package cassandra
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -10,47 +9,28 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 	// 		• Decrement C_BALANCE by PAYMENT
 	// 		• Increment C_YTD_PAYMENT by PAYMENT
 	// 		• Increment C_PAYMENT_CNT by 1
-	var balance, yearToDatePayment float32
-	var paymentCount int
+
+	paymentInt := int(payment * 100)
 	var err error
 
-	for {
-		if err = session.Query(fmt.Sprintf(`SELECT payment_count, balance, year_to_date_payment FROM customers WHERE warehouse_id = %v AND district_id = %v AND customer_id = %v`, warehouseId, districtId, customerId)).
-			Scan(&paymentCount, &balance, &yearToDatePayment); err != nil {
-			log.Printf("Find customer error: %v\n", err)
-			return err
-		}
-		balance -= payment
-		yearToDatePayment += payment
-
-		if err = session.Query(fmt.Sprintf(`UPDATE customers SET payment_count = %v, balance = %v, year_to_date_payment = %v WHERE warehouse_id = %v AND district_id = %v AND customer_id = %v IF payment_count = %v`, paymentCount+1, balance, yearToDatePayment, warehouseId, districtId, customerId, paymentCount)).
-			Exec(); err != nil {
-			log.Printf("Update customer error: %v\n", err)
-		}
-
-		if err == nil {
-			break
-		}
+	if err = session.Query(`UPDATE customer_counters SET payment_count = payment_count + ?, balance = balance - ?, year_to_date_payment = year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, 1, paymentInt, paymentInt, warehouseId, districtId, customerId).
+		Exec(); err != nil {
+		log.Printf("Update customer counter error: %v\n", err)
+		return err
 	}
 
 	// 2. Update the warehouse C_W_ID by incrementing W_YTD by PAYMENT
-	var warehouseYearToDatePayment, districtYearToDatePayment float32
-	for {
-		if err = session.Query(fmt.Sprintf(`SELECT warehouse_year_to_date_payment, district_year_to_date_payment FROM districts WHERE warehouse_id = %v AND district_id = %v`, warehouseId, districtId)).
-			Scan(&warehouseYearToDatePayment, &districtYearToDatePayment); err != nil {
-			log.Printf("Find district error: %v\n", err)
-			continue
-		}
-		districtYearToDatePayment += payment
 
-		if err = session.Query(fmt.Sprintf(`UPDATE districts SET warehouse_year_to_date_payment = %v, district_year_to_date_payment = %v WHERE warehouse_id = %v AND district_id = %v IF warehouse_year_to_date_payment = %v`, warehouseYearToDatePayment+payment, districtYearToDatePayment, warehouseId, districtId, warehouseYearToDatePayment)).
-			Exec(); err != nil {
-			log.Printf("Update district error: %v\n", err)
-		}
+	if err = session.Query(`UPDATE warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, paymentInt).
+		Exec(); err != nil {
+		log.Printf("Update warehouse counter error: %v\n", err)
+		return err
+	}
 
-		if err == nil {
-			break
-		}
+	if err = session.Query(`UPDATE district_counter SET district_year_to_date_payment = district_year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ?`, paymentInt).
+		Exec(); err != nil {
+		log.Printf("Update district counter error: %v\n", err)
+		return err
 	}
 
 	return nil

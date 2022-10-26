@@ -1,49 +1,55 @@
 package cassandra
 
 import (
-	"cs5424project/store/models"
-	"fmt"
-	"github.com/gocql/gocql"
+	"cs5424project/store/cassandra"
 	"log"
+	"time"
 )
 
-func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
-	var customer models.Customer
-	if err := session.Query(fmt.Sprintf(`SELECT * FROM customers WHERE id = %v AND warehouse_id = %v AND district_id = %v LIMIT 1`, customerId, warehouseId, districtId)).
-		Consistency(gocql.Quorum).Scan(&customer); err != nil {
-		log.Printf("Find customer error: %v\n", err)
+func OrderStatusTransaction(warehouseId, districtId, customerId int) error {
+
+	var err error
+	var customerInfo cassandra.CustomerInfo
+	var balanceInt, lastOrderId int
+	if err = session.Query(`SELECT basic_info, last_order_id FROM customers WHERE WHERE id = ? AND warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
+		Scan(&customerInfo, &lastOrderId); err != nil {
+		log.Printf("Find customer basic info error: %v\n", err)
 		return err
 	}
-	var order models.Order
-	if err := session.Query(fmt.Sprintf(`SELECT * FROM orders WHERE customer_id = %v AND warehouse_id = %v AND district_id = %v ORDER BY id DESC LIMIT 1`, customer.Id, customer.WarehouseId, customer.DistrictId)).
-		Consistency(gocql.Quorum).Scan(&order); err != nil {
-		log.Printf("Last order error: %v\n", err)
+	if err = session.Query(`SELECT balance FROM customer_counters WHERE WHERE id = ? AND warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
+		Scan(&balanceInt); err != nil {
+		log.Printf("Find customer balance error: %v\n", err)
 		return err
 	}
-	var orderLines []models.OrderLine
-	if err := session.Query(fmt.Sprintf(`SELECT * FROM orderlines WHERE order_id = %v AND warehouse_id = %v AND district_id = %v`, order.Id, order.WarehouseId, order.DistrictId)).
-		Consistency(gocql.Quorum).Scan(&orderLines); err != nil {
-		log.Printf("Find order lines error: %v\n", err)
+
+	var entryTime, deliveryTime time.Time
+	var carrierId int
+	var orderLines []cassandra.OrderLine
+
+	if err = session.Query(`SELECT entry_time, carrier_id, order_lines, delivery_time FROM orders WHERE WHERE warehouse_id = ? AND district_id = ? AND order_id = ? LIMIT 1`, warehouseId, districtId, lastOrderId).
+		Scan(&entryTime, &carrierId, &orderLines, &deliveryTime); err != nil {
+		log.Printf("Find order error: %v\n", err)
 		return err
 	}
+
 	log.Printf("Customer info: first name = %v, middle name = %v, last name = %v, balance = %v\n",
-		customer.FirstName,
-		customer.MiddleName,
-		customer.LastName,
-		customer.Balance,
+		customerInfo.FirstName,
+		customerInfo.MiddleName,
+		customerInfo.LastName,
+		balanceInt/100.0,
 	)
 	log.Printf("Customer last order info: order id = %v, entry time = %v, carrier id = %v",
-		order.Id,
-		order.EntryTime,
-		order.CarrierId,
+		lastOrderId,
+		entryTime,
+		carrierId,
 	)
 	for _, orderLine := range orderLines {
 		log.Printf("Customer order item info: order info = %v, warehouse id = %v, quantity ordered = %v, total price = %v, delivery time = %v\n",
 			orderLine.ItemId,
-			orderLine.WarehouseId,
+			warehouseId,
 			orderLine.Quantity,
-			orderLine.Price,
-			orderLine.DeliveryTime,
+			orderLine.AmountInt/100.0,
+			deliveryTime,
 		)
 	}
 	return nil

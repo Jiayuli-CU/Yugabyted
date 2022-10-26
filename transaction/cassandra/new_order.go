@@ -11,7 +11,8 @@ import (
 
 func NewOrder(warehouseId, districtId, customerId, total int, itemNumbers, supplierWarehouses []int, quantities []int) error {
 
-	var warehouseTax, districtTax, discount, totalAmount float32
+	var warehouseTax, districtTax, discount float32
+	var totalAmountInt int
 	var orderLines []cassandra.OrderLine
 	var orderId int
 	var err error
@@ -58,10 +59,10 @@ func NewOrder(warehouseId, districtId, customerId, total int, itemNumbers, suppl
 		//update stock info
 		b := session.NewBatch(gocql.CounterBatch).WithContext(ctx)
 		var stmt string
-		if wId != warehouseId {
-			stmt = "UPDATE stock_counter SET quantity = quantity - ?, order_count = order_count + 1 WHERE warehouse_id = ? AND item_id = ?"
+		if wId == warehouseId {
+			stmt = "UPDATE stock_counters SET quantity = quantity - ?, order_count = order_count + 1 WHERE warehouse_id = ? AND item_id = ?"
 		} else {
-			stmt = "UPDATE stock_counter SET quantity = quantity - ?, order_count = order_count + 1, remote_count = remote_count + 1 WHERE warehouse_id = ? AND item_id = ?"
+			stmt = "UPDATE stock_counters SET quantity = quantity - ?, order_count = order_count + 1, remote_count = remote_count + 1 WHERE warehouse_id = ? AND item_id = ?"
 		}
 		b.Entries = append(b.Entries, gocql.BatchEntry{
 			Stmt:       stmt,
@@ -69,7 +70,7 @@ func NewOrder(warehouseId, districtId, customerId, total int, itemNumbers, suppl
 			Idempotent: false,
 		})
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "UPDATE stock_counter SET quantity = quantity + 100 WHERE warehouse_id = ? AND item_id = ? IF quantity < 10",
+			Stmt:       "UPDATE stock_counters SET quantity = quantity + 100 WHERE warehouse_id = ? AND item_id = ? IF quantity < 10",
 			Args:       []interface{}{warehouseId, itemNumber},
 			Idempotent: false,
 		})
@@ -83,27 +84,33 @@ func NewOrder(warehouseId, districtId, customerId, total int, itemNumbers, suppl
 			log.Printf("Find item error: %v\n", err)
 			return err
 		}
-		itemAmount := float32(quantity) * itemPrice
+		itemAmountInt := quantity * int(itemPrice*100)
 		//itemAmount, _ := decimal.NewFromInt(int64(quantities[idx])).Mul(decimal.NewFromFloat(item.Price)).Float64()
-		totalAmount += itemAmount
+		totalAmountInt += itemAmountInt
 
 		orderLine := cassandra.OrderLine{
 			OrderLineId:       idx + 1,
 			ItemId:            itemNumber,
 			SupplyWarehouseId: wId,
 			Quantity:          quantity,
-			Amount:            itemAmount,
+			AmountInt:         itemAmountInt,
 			MiscellaneousData: fmt.Sprintf("S_DIST_%d", districtId),
 		}
 		orderLines = append(orderLines, orderLine)
 	}
 
 	if err = session.Query(`INSERT INTO orders (warehouse_id, district_id, customer_id, customer_id, carrier_id, items_number, status, entry_time, order_lines, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		warehouseId, districtId, customerId, total, local, time.Now(), orderLines, totalAmount).
+		warehouseId, districtId, customerId, total, local, time.Now(), orderLines, totalAmountInt).
 		WithContext(ctx).Exec(); err != nil {
 		log.Fatal(err)
 	}
 
-	totalAmount = totalAmount * (1 + warehouseTax + districtTax) * (1 - discount)
+	if err = session.Query(`UPDATE customers SET last_order_id = ? WHERE warehouse_id =? AND district_id = ? AND customer_id = ?`, orderId, warehouseId, districtId, customerId).
+		WithContext(ctx).Exec(); err != nil {
+		log.Fatal(err)
+	}
+
+	totalAmount := float32(totalAmountInt) * (1 + warehouseTax + districtTax) * (1 - discount)
+	fmt.Println(totalAmount)
 	return nil
 }

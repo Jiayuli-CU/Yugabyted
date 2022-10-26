@@ -58,17 +58,17 @@ func DeliveryTransaction(warehouseId, carrierId int) error {
 		return err
 	}
 
-	var totalAmount float32
+	var totalAmountInt int
 	var customerId int
 
 	for i, orderId := range deliveryOrderIds {
 		if err = session.Query(`SELECT customer_id, total_amount FROM orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
-			Scan(&customerId, totalAmount); err != nil {
+			Scan(&customerId, &totalAmountInt); err != nil {
 			log.Printf("Find order error: %v\n", err)
 			return err
 		}
 
-		if err = session.Query(`UPDATE customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?`, totalAmount, 1).Exec(); err != nil {
+		if err = session.Query(`UPDATE customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?`, totalAmountInt, 1).Exec(); err != nil {
 			log.Printf("Update customer error: %v\n", err)
 			return err
 		}
