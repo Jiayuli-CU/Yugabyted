@@ -2,7 +2,6 @@ package cassandra
 
 import (
 	"cs5424project/store/cassandra"
-	"errors"
 	"fmt"
 	"github.com/deckarep/golang-set"
 	"github.com/gocql/gocql"
@@ -24,7 +23,7 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 
 	// collect the set of itemIds
 	itemIds := mapset.NewSet[int]()
-	orderLines := mapset.NewSet[cassandra.OrderLine]()
+	var orderLines []cassandra.OrderLine
 
 	for orderNumber := nextOrderNumber - numOrders; orderNumber < nextOrderNumber; orderNumber++ {
 		// get the set of orderLines of this order
@@ -36,13 +35,8 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 			return err
 		}
 
-		for orderLineIter := range orderLines.Iterator().C {
-			if orderLine, OK := orderLineIter.(*cassandra.OrderLine); OK {
-				itemIds.Add(orderLine.ItemId)
-			} else {
-				err := errors.New("fail to parse set of orderlines")
-				return err
-			}
+		for _, orderLine := range orderLines {
+			itemIds.Add(orderLine.ItemId)
 		}
 	}
 
@@ -63,6 +57,6 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 		}
 	}
 
-	fmt.Printf("Number of items below threshold %v for warehouseId: %v : %v", stockThreshold, warehouseId, numItemsBelowThreshold)
+	fmt.Printf("Number of items below threshold %v for warehouseId: %v : %v\n", stockThreshold, warehouseId, numItemsBelowThreshold)
 	return nil
 }

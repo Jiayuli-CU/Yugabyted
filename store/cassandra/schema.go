@@ -59,7 +59,7 @@ func createSchema() {
 	}
 
 	orderLineTypeQuery := "CREATE TYPE IF NOT EXISTS cs5424_groupI.order_line " +
-		"(order_line_id int, item_id int, amount float, supply_warehouse_id int, quantity int, miscellaneous_data text);"
+		"(order_line_id int, item_id int, item_name text, amount float, supply_warehouse_id int, quantity int, miscellaneous_data text);"
 	err = session.Query(orderLineTypeQuery).Exec()
 	if err != nil {
 		log.Println(err)
@@ -67,7 +67,7 @@ func createSchema() {
 	}
 
 	orderQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.orders " +
-		"(warehouse_id int, district_id int, order_id int, customer_id int, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp " +
+		"(warehouse_id int, district_id int, order_id int, customer_id int, first text, middle text, last text, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp " +
 		"PRIMARY KEY ((warehouse_id, district_id), order_id));"
 	err = session.Query(orderQuery).Exec()
 	if err != nil {
