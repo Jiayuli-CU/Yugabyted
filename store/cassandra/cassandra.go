@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
+	"time"
 )
 
 var session *gocql.Session
@@ -34,7 +35,7 @@ func init() {
 	} else {
 		fmt.Println("successfully connected to ycql database")
 	}
-	defer session.Close()
+	//defer session.Close()
 
 	// create keyspaces
 	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1};").Exec()
@@ -43,7 +44,7 @@ func init() {
 		return
 	}
 
-	createSchema()
+	//createSchema()
 }
 
 //func initTables() {
@@ -102,4 +103,14 @@ func init() {
 
 func GetSession() *gocql.Session {
 	return session
+}
+
+func CloseSession() {
+	session.Close()
+}
+
+func QueryTest() error {
+	return session.Query(`INSERT INTO cs5424_groupI.orders (warehouse_id, district_id, order_id, customer_id, items_number, all_local, entry_time, order_lines) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		1, 1, 1, 1, 1, 1, time.Now(), []OrderLine{{1, 1, 1.0, 1, 1, "test"}}).
+		Exec()
 }

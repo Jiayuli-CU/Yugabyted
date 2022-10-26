@@ -20,6 +20,12 @@ func main() {
 	//
 	//wg.Wait()
 	//fmt.Println("main exit")
-	session := cassandra.GetSession()
-	fmt.Println(session)
+	defer cassandra.CloseSession()
+	err := cassandra.QueryTest()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("good")
+	}
+
 }

@@ -7,6 +7,7 @@ import (
 func createSchema() {
 
 	var err error
+
 	warehouseAddressType := "CREATE TYPE IF NOT EXISTS cs5424_groupI.warehouse_info " +
 		"(name text, street_1 text, street_2 text, city text, state text, zip text);"
 	err = session.Query(warehouseAddressType).Exec()
@@ -24,7 +25,7 @@ func createSchema() {
 	}
 
 	districtQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.districts " +
-		"(warehouse_id int, district_id int, next_order_number int, district_address FROZEN<district_info>, district_tax_rate float, warehouse_address FROZEN<warehouse_info> static, warehouse_tax_rate float static, " +
+		"(warehouse_id int, district_id int, next_order_number int, district_address FROZEN<district_info>, district_tax_rate float, warehouse_address FROZEN<warehouse_info> static, warehouse_tax_rate float static, warehouse_year_to_date_payment float static, district_year_to_date_payment float, next_delivery_order_id int" +
 		"PRIMARY KEY ((warehouse_id), district_id));"
 	err = session.Query(districtQuery).Exec()
 	if err != nil {
@@ -41,7 +42,7 @@ func createSchema() {
 	}
 
 	customerQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.customers " +
-		"(warehouse_id int, district_id int, customer_id int, basic_info FROZEN<customer_info>, discount_rate float, balance float, year_to_date_payment float, miscellaneous_data text, " +
+		"(warehouse_id int, district_id int, customer_id int, payment_count int, basic_info FROZEN<customer_info>, discount_rate float, balance float, year_to_date_payment float, miscellaneous_data text, " +
 		"PRIMARY KEY ((warehouse_id, district_id), customer_id));"
 	err = session.Query(customerQuery).Exec()
 	if err != nil {
@@ -50,7 +51,7 @@ func createSchema() {
 	}
 
 	customerCounterQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.customer_counters " +
-		"(warehouse_id int, district_id int, customer_id int, payment_count counter, delivery_count counter, " +
+		"(warehouse_id int, district_id int, customer_id int, delivery_count counter, balance counter, year_to_date_payment counter" +
 		"PRIMARY KEY ((warehouse_id, district_id), customer_id));"
 	err = session.Query(customerCounterQuery).Exec()
 	if err != nil {
@@ -67,7 +68,7 @@ func createSchema() {
 	}
 
 	orderQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.orders " +
-		"(warehouse_id int, district_id int, order_id int, customer_id int, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp, " +
+		"(warehouse_id int, district_id int, order_id int, customer_id int, carrier_id int, items_number int, status int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp, total_amount float " +
 		"PRIMARY KEY ((warehouse_id, district_id), order_id));"
 	err = session.Query(orderQuery).Exec()
 	if err != nil {
