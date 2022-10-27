@@ -36,3 +36,23 @@ func TestOrderStatus(t *testing.T) {
 	filePath := "../data/test_xact_files/test_psql_order_status.txt"
 	SqlClient(filePath, 0)
 }
+
+func TestStocklevel(t *testing.T) {
+	filePath := "../data/test_xact_files/test_psql_stock_level.txt"
+	SqlClient(filePath, 0)
+}
+
+func TestPopularItem(t *testing.T) {
+	filePath := "../data/test_xact_files/test_psql_popular_item.txt"
+	SqlClient(filePath, 0)
+}
+
+func TestTopBalance(t *testing.T) {
+	filePath := "../data/test_xact_files/test_psql_top_balance.txt"
+	SqlClient(filePath, 0)
+}
+
+func TestRelatedCustomer(t *testing.T) {
+	filePath := "../data/test_xact_files/test_psql_related_customer.txt"
+	SqlClient(filePath, 0)
+}
