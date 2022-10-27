@@ -1,7 +1,6 @@
 package postgre
 
 import (
-	"cs5424project/data"
 	"cs5424project/store/models"
 	"errors"
 	"fmt"
@@ -12,7 +11,10 @@ import (
 	"gorm.io/sharding"
 )
 
-var db *gorm.DB
+var (
+	db               *gorm.DB
+	orderCustomerMap = map[uint64]uint64{}
+)
 
 const (
 	host           = "ap-southeast-1.cffa655e-246b-4910-bb38-38d762998390.aws.ybdb.io"
@@ -107,7 +109,7 @@ func shardingDB(db *gorm.DB) {
 		NumberOfShards: shardingNumber,
 		ShardingAlgorithm: func(value interface{}) (suffix string, err error) {
 			if uid, ok := value.(uint64); ok {
-				return fmt.Sprintf("_%02d", data.GetOrderCustomerMap()[uid]%shardingNumber), nil
+				return fmt.Sprintf("_%02d", orderCustomerMap[uid]%shardingNumber), nil
 			}
 			return "", errors.New("invalid user_id")
 		},
@@ -136,4 +138,12 @@ func generateDSN(host, port, user, password, dbname string) string {
 
 func GetDB() *gorm.DB {
 	return db
+}
+
+func GetOrderCustomerMap() map[uint64]uint64 {
+	return orderCustomerMap
+}
+
+func SetOrderCustomerMap(newMap map[uint64]uint64) {
+	orderCustomerMap = newMap
 }
