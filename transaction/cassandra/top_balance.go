@@ -21,7 +21,7 @@ func TopBalanceTransaction() error {
 		This transaction finds the top-10 customers ranked in descending order of their outstanding balance payments
 	*/
 
-	customerBalanceInfos := []CustomerBalanceInfo{}
+	var customerBalanceInfos []CustomerBalanceInfo
 
 	GetTop10BalancePerPartition := `SELECT * FROM customer_balance PER PARTITION LIMIT 10;`
 

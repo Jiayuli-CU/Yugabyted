@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cs5424project/data"
 	"cs5424project/store/cassandra"
 )
 
@@ -33,6 +32,6 @@ func main() {
 	//cassandra2.PaymentTransaction(1, 1, 1, 23.0)
 	//data.CQLLoadOrder()
 	//cassandra2.OrderStatusTransaction(1, 1, 1)
-	data.CQLLoadOrder()
+	//data.CQLLoadOrder()
 
 }

@@ -135,14 +135,14 @@ func createSchema() {
 	}
 
 	// create materialized view for customer balance
-	dropCustomerBalanceIfExistCmd := "DROP MATERIALIZED VIEW IF EXISTS customer_balance;"
+	dropCustomerBalanceIfExistCmd := "DROP MATERIALIZED VIEW IF EXISTS cs5424_groupi.customer_balance;"
 	err = session.Query(dropCustomerBalanceIfExistCmd).Exec()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	createCustomerBalanceMVCmd := `CREATE MATERIALIZED VIEW customer_balance AS SELECT warehouse_id, district_id, customer_id, balance FROM customer_counters 
+	createCustomerBalanceMVCmd := `CREATE MATERIALIZED VIEW cs5424_groupi.customer_balance AS SELECT warehouse_id, district_id, customer_id, balance FROM customer_counters 
         WHERE c_balance IS NOT NULL AND warehouse_id IS NOT NULL AND district_id IS NOT NULL AND customer_id IS NOT NULL
            PRIMARY KEY (warehouse_id, balance, district_id, customer_id) 
         WITH CLUSTERING ORDER BY (balance DESC);`
