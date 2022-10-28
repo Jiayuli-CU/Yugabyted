@@ -2,7 +2,6 @@ package driver
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 )
 
@@ -12,7 +11,8 @@ func TestSqlClient(t *testing.T) {
 }
 
 func TestSqlClient2(t *testing.T) {
-	s := "5"
-	i, _ := strconv.Atoi(s)
-	fmt.Println(s, i)
+	s := make([]int, 10)
+	for i, t := range s[3:] {
+		fmt.Println(i, t)
+	}
 }

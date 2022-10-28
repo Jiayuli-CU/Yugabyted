@@ -7,6 +7,6 @@ import (
 
 func Test_Query(t *testing.T) {
 	var err error
-	err = QueryTest()
+	QueryTest()
 	assert.NoError(t, err)
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"cs5424project/data"
 	"cs5424project/store/cassandra"
-	"fmt"
 )
 
 func main() {
@@ -21,11 +21,18 @@ func main() {
 	//wg.Wait()
 	//fmt.Println("main exit")
 	defer cassandra.CloseSession()
-	err := cassandra.QueryTest()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("good")
-	}
+	//cassandra.QueryTest()
+
+	//var w []int
+	//w = append(w, 1)
+	//err := cassandra2.NewOrder(1, 1, 1, 1, w, w, w)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+
+	//cassandra2.PaymentTransaction(1, 1, 1, 23.0)
+	//data.CQLLoadOrder()
+	//cassandra2.OrderStatusTransaction(1, 1, 1)
+	data.CQLLoadOrder()
 
 }
