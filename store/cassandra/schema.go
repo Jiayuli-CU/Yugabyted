@@ -88,7 +88,7 @@ func createSchema() {
 
 	orderQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.orders " +
 		"(warehouse_id int, district_id int, order_id int, customer_id int, first_name text, middle_name text, last_name text, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp, total_amount int " +
-		"PRIMARY KEY ((warehouse_id, district_id), order_id));"
+		"PRIMARY KEY ((warehouse_id, district_id), order_id, customer_id));"
 	err = session.Query(orderQuery).Exec()
 	if err != nil {
 		log.Println(err)
@@ -130,6 +130,24 @@ func createSchema() {
 		" PRIMARY KEY (item_id) " +
 		" );"
 	err = session.Query(createItemsCmd).Exec()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// create materialized view for customer balance
+	dropCustomerBalanceIfExistCmd := "DROP MATERIALIZED VIEW IF EXISTS customer_balance;"
+	err = session.Query(dropCustomerBalanceIfExistCmd).Exec()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	createCustomerBalanceMVCmd := `CREATE MATERIALIZED VIEW customer_balance AS SELECT warehouse_id, district_id, customer_id, balance FROM customer_counters 
+        WHERE c_balance IS NOT NULL AND warehouse_id IS NOT NULL AND district_id IS NOT NULL AND customer_id IS NOT NULL
+           PRIMARY KEY (warehouse_id, balance, district_id, customer_id) 
+        WITH CLUSTERING ORDER BY (balance DESC);`
+	err = session.Query(createCustomerBalanceMVCmd).Exec()
 	if err != nil {
 		log.Println(err)
 		return
