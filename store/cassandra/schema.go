@@ -51,7 +51,7 @@ func createSchema() {
 	}
 
 	customerInfoType := "CREATE TYPE IF NOT EXISTS cs5424_groupI.customer_info " +
-		"(first text, middle text, last text, street_1 text, street_2 text, city text, state text, zip text, phone text, since timestamp, credit text, credit_limit float);"
+		"(first_name text, middle_name text, last_name text, street_1 text, street_2 text, city text, state text, zip text, phone text, since timestamp, credit text, credit_limit float);"
 	err = session.Query(customerInfoType).Exec()
 	if err != nil {
 		log.Println(err)
@@ -86,7 +86,7 @@ func createSchema() {
 	}
 
 	orderQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.orders " +
-		"(warehouse_id int, district_id int, order_id int, customer_id int, first text, middle text, last text, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<cs5424_groupi.order_line>>, delivery_time timestamp, total_amount int, " +
+		"(warehouse_id int, district_id int, order_id int, customer_id int, first_name text, middle_name text, last_name text, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp, total_amount int " +
 		"PRIMARY KEY ((warehouse_id, district_id), order_id));"
 	err = session.Query(orderQuery).Exec()
 	if err != nil {

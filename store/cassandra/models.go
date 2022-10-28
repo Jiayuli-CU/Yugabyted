@@ -53,9 +53,9 @@ type OrderLine struct {
 }
 
 type CustomerInfo struct {
-	FirstName   string    `cql:"first" json:"first,omitempty"`
-	MiddleName  string    `cql:"middle" json:"middle,omitempty"`
-	LastName    string    `cql:"last" json:"last,omitempty"`
+	FirstName   string    `cql:"first" json:"first_name,omitempty"`
+	MiddleName  string    `cql:"middle" json:"middle_name,omitempty"`
+	LastName    string    `cql:"last" json:"last_name,omitempty"`
 	Street1     string    `cql:"street_1" json:"street_1,omitempty"`
 	Street2     string    `cql:"street_2" json:"street_2,omitempty"`
 	City        string    `cql:"city" json:"city,omitempty"`
@@ -89,9 +89,9 @@ type Order struct {
 	DistrictId   int         `cql:"district_id" json:"district_id"`
 	OrderId      int         `cql:"order_id" json:"order_id"`
 	CustomerId   int         `cql:"customer_id" json:"customer_id"`
-	FirstName    string      `cql:"first" json:"first,omitempty"`
-	MiddleName   string      `cql:"middle" json:"middle,omitempty"`
-	LastName     string      `cql:"last" json:"last,omitempty"`
+	FirstName    string      `cql:"first" json:"first_name,omitempty"`
+	MiddleName   string      `cql:"middle" json:"middle_name,omitempty"`
+	LastName     string      `cql:"last" json:"last_name,omitempty"`
 	CarrierId    int         `cql:"carrier_id" json:"carrier_id"`
 	ItemsNumber  int         `json:"items_number" cql:"items_number"`
 	AllLocal     int         `json:"all_local" cql:"all_local"`
