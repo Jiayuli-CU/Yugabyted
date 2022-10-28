@@ -28,17 +28,17 @@ func DeliveryTransaction(warehouseId, carrierId int) error {
 	deliveryOrderIds := make([]int, 10)
 	b := session.NewBatch(gocql.CounterBatch)
 
-	for districtId := 1; districtId <= 10; districtId++ {
+	for districtId := 1; districtId <= 1; districtId++ {
 		deliveryOrderId := 0
 		for {
-			err = session.Query(`SELECT next_delivery_order_id FROM districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).Consistency(gocql.Quorum).
+			err = session.Query(`SELECT next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).Consistency(gocql.Quorum).
 				Scan(&deliveryOrderId)
 			if err != nil {
 				log.Printf("Find district error: %v\n", err)
 				continue
 			}
 
-			err = session.Query(`UPDATE districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+			err = session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
 				Exec()
 			if err == nil {
 				deliveryOrderIds[districtId-1] = deliveryOrderId
@@ -47,7 +47,7 @@ func DeliveryTransaction(warehouseId, carrierId int) error {
 		}
 
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "UPDATE orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
+			Stmt:       "UPDATE cs5424_groupI.orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
 			Args:       []interface{}{carrierId, time.Now(), warehouseId, districtId, deliveryOrderId},
 			Idempotent: true,
 		})
@@ -62,13 +62,13 @@ func DeliveryTransaction(warehouseId, carrierId int) error {
 	var customerId int
 
 	for i, orderId := range deliveryOrderIds {
-		if err = session.Query(`SELECT customer_id, total_amount FROM orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
+		if err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
 			Scan(&customerId, &totalAmountInt); err != nil {
 			log.Printf("Find order error: %v\n", err)
 			return err
 		}
 
-		if err = session.Query(`UPDATE customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?`, totalAmountInt, 1).Exec(); err != nil {
+		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?`, totalAmountInt, 1).Exec(); err != nil {
 			log.Printf("Update customer error: %v\n", err)
 			return err
 		}

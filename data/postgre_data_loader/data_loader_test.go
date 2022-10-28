@@ -1,4 +1,4 @@
-package data
+package postgre_data_loader
 
 import (
 	"github.com/stretchr/testify/assert"

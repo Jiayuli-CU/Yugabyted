@@ -15,19 +15,20 @@ const (
 
 func init() {
 	var err error
-	cluster := gocql.NewCluster("ap-southeast-1.cffa655e-246b-4910-bb38-38d762998390.aws.ybdb.io")
+	cluster := gocql.NewCluster("ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io")
 	//cluster.Keyspace = keySpace
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: "admin",
-		Password: "SYl-f5R-0HM69wk1U0FLjLfPd3ziNx",
+		Password: "lZdcAJFv1BlkhUMsiz86dLSV-Z1__h",
 	}
 	//cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("ap-southeast-1")
 	cluster.SslOpts = &gocql.SslOptions{
-		CaPath:                 "root.crt",
+		CaPath:                 "cassandra_root.crt",
 		EnableHostVerification: false,
 	}
+	cluster.Timeout = time.Minute
 
 	session, err = cluster.CreateSession()
 	if err != nil {
@@ -44,7 +45,7 @@ func init() {
 		return
 	}
 
-	//createSchema()
+	createSchema()
 }
 
 //func initTables() {
@@ -109,8 +110,65 @@ func CloseSession() {
 	session.Close()
 }
 
-func QueryTest() error {
-	return session.Query(`INSERT INTO cs5424_groupI.orders (warehouse_id, district_id, order_id, customer_id, items_number, all_local, entry_time, order_lines) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		1, 1, 1, 1, 1, 1, time.Now(), []OrderLine{{1, 1, 1.0, 1, 1, "test"}}).
-		Exec()
+func QueryTest() {
+	var err error
+
+	//orderLine := OrderLine{
+	//	OrderLineId:       1,
+	//	ItemId:            1,
+	//	ItemName:          "name",
+	//	AmountInt:         1,
+	//	SupplyWarehouseId: 1,
+	//	Quantity:          1,
+	//	MiscellaneousData: "test",
+	//}
+	//err = session.Query(`INSERT INTO cs5424_groupi.orders (warehouse_id, district_id, order_id, customer_id, items_number, all_local, entry_time, order_lines) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+	//	1, 1, 1, 1, 1, 1, time.Now(), []OrderLine{orderLine}).Exec()
+	//if err != nil {
+	//	fmt.Println("order: ", err)
+	//}
+
+	//err = session.Query(`INSERT INTO cs5424_groupi.orders (warehouse_id, district_id, order_id, customer_id, items_number, all_local, entry_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+	//	1, 1, 1, 1, 1, 1, time.Now()).
+	//	Exec()
+	//if err != nil {
+	//	fmt.Println("order: ", err)
+	//}
+
+	//err = session.Query(`INSERT INTO cs5424_groupi.customers (warehouse_id, district_id, customer_id, discount_rate, miscellaneous_data, last_order_id) VALUES (?, ?, ?, ?, ?, ?)`,
+	//	1, 1, 1, float32(1.0), "test", 0).Exec()
+	//if err != nil {
+	//	fmt.Println("customer: ", err)
+	//}
+	//
+	//err = session.Query(`INSERT INTO cs5424_groupi.districts (warehouse_id, district_id, next_order_number, district_tax_rate, warehouse_tax_rate, next_delivery_order_id) VALUES (?, ?, ?, ?, ?, ?)`,
+	//	1, 1, 2, float32(0.30), float32(0.40), 1).Exec()
+	//if err != nil {
+	//	fmt.Println("district: ", err)
+	//}
+	//
+	//err = session.Query(`INSERT INTO cs5424_groupi.stocks (warehouse_id, item_id) VALUES (?, ?)`,
+	//	1, 1).Exec()
+	//if err != nil {
+	//	fmt.Println("stock: ", err)
+	//}
+	////order_count, remote_count, quantity, total_quantity) VALUES (?, ?, ?, ?, ?, ?)
+	//err = session.Query(`UPDATE cs5424_groupi.stock_counters SET order_count = order_count + ? WHERE warehouse_id = ? AND item_id= ?`,
+	//	1, 1, 1).Exec()
+	//if err != nil {
+	//	fmt.Println("stock_counters: ", err)
+	//}
+	//
+
+	err = session.Query(`INSERT INTO CS5424_GROUPI.items (item_id, item_price) VALUES (?, ?)`,
+		1, float32(100.0)).Exec()
+	if err != nil {
+		fmt.Println("items: ", err)
+	}
+
+	//err = session.Query(`UPDATE cs5424_groupi.stock_counters SET remote_count = remote_count + ? WHERE warehouse_id = ? AND item_id= ?`,
+	//	1, 1, 1).Exec()
+	//if err != nil {
+	//	fmt.Println("stock_counters: ", err)
+	//}
 }
