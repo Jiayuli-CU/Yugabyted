@@ -23,20 +23,39 @@ type CustomerIdentifier struct {
 
 func RelatedCustomerTransaction(warehouseId, districtId, customerId int) error {
 	var itemIdSets []map[int]bool
-	var ordersBycustomer []OrderInfo
+	var orderInfosByCustomer []OrderInfo
 	// find orders of this customer
-	GetOrdersByCustomerQuery := fmt.Sprintf(`SELECT warehouse_id, district_id, order_id, customer_id FROM orders 
+	GetOrdersByCustomerQuery := fmt.Sprintf(`SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders 
                                                         WHERE warehouse_id = %v AND district_id = %v customer_id = %v`, warehouseId, districtId, customerId)
 
-	if err := session.Query(GetOrdersByCustomerQuery).
-		Consistency(gocql.Quorum).
-		Scan(&ordersBycustomer); err != nil {
-		log.Printf("Find orders by customer: %v\n", err)
-		return err
+	scanner := session.Query(GetOrdersByCustomerQuery).Iter().Scanner()
+	for scanner.Next() {
+		var (
+			_warehouseId int
+			_districtId  int
+			_orderId     int
+			_customerId  int
+			_orderLines  []cassandra.OrderLine
+		)
+
+		err := scanner.Scan(&_warehouseId, &_districtId, &_orderId, &_customerId, &_orderLines)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		orderInfo := OrderInfo{
+			WarehouseId: _warehouseId,
+			DistrictId:  _districtId,
+			OrderId:     _orderId,
+			CustomerId:  _customerId,
+			OrderLines:  _orderLines,
+		}
+
+		orderInfosByCustomer = append(orderInfosByCustomer, orderInfo)
 	}
 
 	// collect set of items
-	for _, order := range ordersBycustomer {
+	for _, order := range orderInfosByCustomer {
 		itemIdSet := map[int]bool{}
 		for _, orderLine := range order.OrderLines {
 			itemIdSet[orderLine.ItemId] = true
@@ -46,7 +65,7 @@ func RelatedCustomerTransaction(warehouseId, districtId, customerId int) error {
 
 	// iterate over all orders
 	var allOrderInfos []OrderInfo
-	GetAllOderInfosQuery := `SELECT warehouse_id, district_id, order_id, customer_id FROM orders`
+	GetAllOderInfosQuery := `SELECT warehouse_id, district_id, order_id, customer_id FROM cs5424_groupI.orders`
 	if err := session.Query(GetAllOderInfosQuery).
 		Consistency(gocql.Quorum).
 		Scan(&allOrderInfos); err != nil {
@@ -95,6 +114,6 @@ func RelatedCustomerTransaction(warehouseId, districtId, customerId int) error {
 		fmt.Printf("(warehouseId: %v, districtId: %v, customerId: %v)",
 			relatedCustomer.WarehouseId, relatedCustomer.DistrictId, relatedCustomer.CustomerId)
 	}
-	
+
 	return nil
 }

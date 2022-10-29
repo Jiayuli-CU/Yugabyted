@@ -12,7 +12,7 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 	var nextOrderNumber int
 	var numItemsBelowThreshold int
 
-	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
+	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
 	if err := session.Query(GetNextOrderNumberQuery).
 		Consistency(gocql.Quorum).
 		Scan(&nextOrderNumber); err != nil {
@@ -26,7 +26,7 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 
 	for orderNumber := nextOrderNumber - numOrders; orderNumber < nextOrderNumber; orderNumber++ {
 		// get the set of orderLines of this order
-		GetOrderLinesQuery := fmt.Sprintf(`SELECT order_lines FROM orders WHERE warehouse_id = %v AND district_id = %v AND order_id = %v LIMIT 1`, warehouseId, districtId, orderNumber)
+		GetOrderLinesQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupI.orders WHERE warehouse_id = %v AND district_id = %v AND order_id = %v LIMIT 1`, warehouseId, districtId, orderNumber)
 		if err := session.Query(GetOrderLinesQuery).
 			Consistency(gocql.Quorum).
 			Scan(&orderLines); err != nil {
@@ -43,7 +43,7 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 	for itemId, _ := range itemIds {
 		// get the stock number of this item
 		var stockQuantity int
-		GetItemStockQuantityQuery := fmt.Sprintf(`SELECT quantity FROM stock_counter WHERE warehouse_id = %v AND item_id = %v LIMIT 1`, warehouseId, itemId)
+		GetItemStockQuantityQuery := fmt.Sprintf(`SELECT quantity FROM cs5424_groupI.stock_counters WHERE warehouse_id = %v AND item_id = %v LIMIT 1`, warehouseId, itemId)
 		if err := session.Query(GetItemStockQuantityQuery).
 			Consistency(gocql.Quorum).
 			Scan(&stockQuantity); err != nil {

@@ -15,7 +15,7 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 	// find next available order number for (warehouseId, DistrictId)
 	var nextOrderNumber int
 
-	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
+	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
 	if err := session.Query(GetNextOrderNumberQuery).
 		Consistency(gocql.Quorum).
 		Scan(&nextOrderNumber); err != nil {
@@ -35,7 +35,7 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 	// for each order
 	for orderNumber := nextOrderNumber - numOrders; orderNumber < nextOrderNumber; orderNumber++ {
 		// get the set of orderLines of this order
-		GetOrderLinesQuery := fmt.Sprintf(`SELECT order_lines, entry_time, first_name, middle_name, last_name FROM orders WHERE warehouse_id = %v AND district_id = %v AND order_id = %v LIMIT 1`, warehouseId, districtId, orderNumber)
+		GetOrderLinesQuery := fmt.Sprintf(`SELECT order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders WHERE warehouse_id = %v AND district_id = %v AND order_id = %v LIMIT 1`, warehouseId, districtId, orderNumber)
 		if err := session.Query(GetOrderLinesQuery).
 			Consistency(gocql.Quorum).
 			Scan(&orderLines, &orderEntryTime, &firstName, &middleName, &lastName); err != nil {
