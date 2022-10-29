@@ -25,33 +25,56 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 
 	// collect the set of itemIds
 	itemIdSetForEachOrder := map[int]map[int]bool{}
-	var orderEntryTime time.Time
-	var firstName, middleName, lastName string
-	var orderLines []cassandra.OrderLine
 	popularItemIds := map[int]bool{}
 	itemIdToName := map[int]string{}
 
 	fmt.Println("For each order:")
-	// for each order
-	for orderNumber := nextOrderNumber - numOrders; orderNumber < nextOrderNumber; orderNumber++ {
-		// get the set of orderLines of this order
-		GetOrderLinesQuery := fmt.Sprintf(`SELECT order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders WHERE warehouse_id = %v AND district_id = %v AND order_id = %v LIMIT 1`, warehouseId, districtId, orderNumber)
-		if err := session.Query(GetOrderLinesQuery).
-			Consistency(gocql.Quorum).
-			Scan(&orderLines, &orderEntryTime, &firstName, &middleName, &lastName); err != nil {
-			log.Printf("Find orderlines error when querying orders table: %v\n", err)
-			return err
+
+	// get all required orders
+	var orders []orderInfo
+	GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders 
+                                                                             WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
+		warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
+	scanner := session.Query(GetOrdersQuery).Iter().Scanner()
+	for scanner.Next() {
+		var (
+			_orderId    int
+			_orderLines []cassandra.OrderLine
+			_entryTime  time.Time
+			_firstName  string
+			_middleName string
+			_lastName   string
+		)
+
+		err := scanner.Scan(&_orderId, &_orderLines, &_entryTime, &_firstName, &_middleName, &_lastName)
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		fmt.Printf("orderId: %v, entry date and time: %v\n", orderNumber, orderEntryTime)
-		fmt.Printf("%v, %v, %v", firstName, middleName, lastName)
+		order := orderInfo{
+			orderId:    _orderId,
+			orderLines: _orderLines,
+			entryTime:  _entryTime,
+			firstName:  _firstName,
+			middleName: _middleName,
+			lastName:   _lastName,
+		}
+
+		orders = append(orders, order)
+	}
+
+	// for each order
+	for _, order := range orders {
+		// get the set of orderLines of this order
+		fmt.Printf("orderId: %v, entry date and time: %v\n", order.orderId, order.entryTime)
+		fmt.Printf("%v, %v, %v", order.firstName, order.middleName, order.lastName)
 
 		itemIds := map[int]bool{}
 
 		// find the max quantity for this order
 		var maxQuantity int
 
-		for _, orderLine := range orderLines {
+		for _, orderLine := range order.orderLines {
 			itemIds[orderLine.ItemId] = true
 
 			if orderLine.Quantity > maxQuantity {
@@ -60,16 +83,15 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 		}
 
 		// find the popular item for this order (could be more than 1 popular item)
-		for _, orderLine := range orderLines {
+		for _, orderLine := range order.orderLines {
 			if orderLine.Quantity == maxQuantity {
 				popularItemIds[orderLine.ItemId] = true
-				//popularItemIds.Add(orderLine.ItemId)
 				itemIdToName[orderLine.ItemId] = orderLine.ItemName
 				fmt.Printf("ItemName: %v,\tQuantity: %v", orderLine.ItemName, orderLine.Quantity)
 			}
 		}
 
-		itemIdSetForEachOrder[orderNumber] = itemIds
+		itemIdSetForEachOrder[order.orderId] = itemIds
 	}
 
 	// calculate the percentage of examined orders that contain each popular item
@@ -88,4 +110,13 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 	}
 
 	return nil
+}
+
+type orderInfo struct {
+	orderId    int
+	orderLines []cassandra.OrderLine
+	entryTime  time.Time
+	firstName  string
+	middleName string
+	lastName   string
 }
