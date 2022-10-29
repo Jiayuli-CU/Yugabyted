@@ -86,13 +86,20 @@ func createSchema() {
 	}
 
 	orderQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.orders " +
-		"(warehouse_id int, district_id int, order_id int, customer_id int, first_name text, middle_name text, last_name text, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp, total_amount int " +
-		"PRIMARY KEY ((warehouse_id, district_id), order_id, customer_id));"
+		"(warehouse_id int, district_id int, order_id int, customer_id int, first_name text, middle_name text, last_name text, carrier_id int, items_number int, all_local int, entry_time timestamp, order_lines set<FROZEN<order_line>>, delivery_time timestamp, total_amount int, " +
+		"PRIMARY KEY ((warehouse_id, district_id), order_id));"
 	err = session.Query(orderQuery).Exec()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	//customerIndex := "CREATE INDEX order_customer_index ON cs5424_groupI.orders (customer_id) WITH transactions = {'enabled': 'false', 'consistency_level': 'user_enforced'};"
+	//err = session.Query(customerIndex).Exec()
+	//if err != nil {
+	//	log.Println(err)
+	//	return
+	//}
 
 	stockInfoTypeQuery := "CREATE TYPE IF NOT EXISTS cs5424_groupI.stock_info " +
 		"(district_1_info text, district_2_info text, district_3_info text,district_4_info text, district_5_info text, district_6_info text, district_7_info text, district_8_info text, district_9_info text, district_10_info text, miscellaneous_data text);"
@@ -135,20 +142,20 @@ func createSchema() {
 	}
 
 	// create materialized view for customer balance
-	dropCustomerBalanceIfExistCmd := "DROP MATERIALIZED VIEW IF EXISTS cs5424_groupi.customer_balance;"
-	err = session.Query(dropCustomerBalanceIfExistCmd).Exec()
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	//dropCustomerBalanceIfExistCmd := "DROP MATERIALIZED VIEW IF EXISTS cs5424_groupi.customer_balance;"
+	//err = session.Query(dropCustomerBalanceIfExistCmd).Exec()
+	//if err != nil {
+	//	log.Println(err)
+	//	return
+	//}
 
-	createCustomerBalanceMVCmd := `CREATE MATERIALIZED VIEW cs5424_groupi.customer_balance AS SELECT warehouse_id, district_id, customer_id, balance FROM customer_counters 
-        WHERE c_balance IS NOT NULL AND warehouse_id IS NOT NULL AND district_id IS NOT NULL AND customer_id IS NOT NULL
-           PRIMARY KEY (warehouse_id, balance, district_id, customer_id) 
-        WITH CLUSTERING ORDER BY (balance DESC);`
-	err = session.Query(createCustomerBalanceMVCmd).Exec()
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	//createCustomerBalanceMVCmd := `CREATE MATERIALIZED VIEW cs5424_groupi.customer_balance AS SELECT warehouse_id, district_id, customer_id, balance FROM customer_counters
+	//    WHERE c_balance IS NOT NULL AND warehouse_id IS NOT NULL AND district_id IS NOT NULL AND customer_id IS NOT NULL
+	//       PRIMARY KEY (warehouse_id, balance, district_id, customer_id)
+	//    WITH CLUSTERING ORDER BY (balance DESC);`
+	//err = session.Query(createCustomerBalanceMVCmd).Exec()
+	//if err != nil {
+	//	log.Println(err)
+	//	return
+	//}
 }

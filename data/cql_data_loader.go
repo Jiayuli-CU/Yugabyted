@@ -3,8 +3,8 @@ package data
 import (
 	"cs5424project/store/cassandra"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
-	"github.com/goccy/go-json"
 	"github.com/gocql/gocql"
 	"os"
 	"strconv"
@@ -291,6 +291,40 @@ func readItem() []cassandra.Item {
 	return items
 }
 
+func CQLLoadItem() {
+	items := readItem()
+
+	var b = session.NewBatch(gocql.UnloggedBatch)
+	var err error
+
+	for i, item := range items {
+		if i != 0 && i%1000 == 0 {
+			err = session.ExecuteBatch(b)
+			if err != nil {
+				fmt.Printf("mid batch failed: item_id:%v, err: %v\n", i, err)
+				return
+			}
+			b = session.NewBatch(gocql.UnloggedBatch)
+			fmt.Printf("current state: %v\n", i)
+		}
+		itemJson, err := json.Marshal(item)
+		if err != nil {
+			fmt.Printf("Json parser error: %v\n", err)
+		}
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       "INSERT INTO cs5424_groupi.items JSON ?",
+			Args:       []interface{}{string(itemJson)},
+			Idempotent: true,
+		})
+	}
+	err = session.ExecuteBatch(b)
+	if err != nil {
+		fmt.Printf("final batch failed: err: %v\n", err)
+		return
+	}
+
+}
+
 func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 
 	items := readItem()
@@ -321,8 +355,6 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 		itemId, _ := strconv.Atoi(ol[4])
 		if ol[5] != "null" {
 			deliveryTime, _ = time.ParseInLocation("2006-01-02 15:04:05", ol[5], time.Local)
-		} else {
-			deliveryTime = time.Time{}
 		}
 		totalPrice, _ := strconv.ParseFloat(ol[6], 32)
 		supplyWarehouseId, _ := strconv.Atoi(ol[7])
@@ -337,10 +369,10 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 			Quantity:          quantity,
 			MiscellaneousData: ol[9],
 		}
-		//if ol[5] != "null" {
-		//	orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = deliveryTime
-		//}
-		orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = deliveryTime
+		if ol[5] != "null" {
+			orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = &deliveryTime
+		}
+		//orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = deliveryTime
 		orders[warehouseId-1][districtId-1][orderId-1].TotalAmount += int(totalPrice * 100)
 		orders[warehouseId-1][districtId-1][orderId-1].OrderLines = append(orders[warehouseId-1][districtId-1][orderId-1].OrderLines, orderLine)
 	}
@@ -407,58 +439,140 @@ func CQLLoadOrder() {
 	file.Close()
 	orders = cqlLoadOrderLine(orders)
 
-	//for _, o := range orders[0][0][2000:2200] {
-	//	fmt.Printf("order: %+v\n", o)
-	//}
+	for w, order2Layer := range orders {
+		for d, order3Layer := range order2Layer {
+			var b = session.NewBatch(gocql.UnloggedBatch)
+			for o, order := range order3Layer {
+				if o != 0 && o%1000 == 0 {
+					err = session.ExecuteBatch(b)
+					if err != nil {
+						fmt.Printf("mid batch failed: warehouse id: %v, district_id: %v, order id:%v, err: %v\n", w, d, o, err)
+						return
+					}
+					b = session.NewBatch(gocql.UnloggedBatch)
+					fmt.Printf("current state: %v, %v, %v\n", w, d, o)
+				}
+				orderJson, err := json.Marshal(order)
+				if err != nil {
+					fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
+				}
+				b.Entries = append(b.Entries, gocql.BatchEntry{
+					Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
+					Args:       []interface{}{string(orderJson)},
+					Idempotent: true,
+				})
+			}
+			err = session.ExecuteBatch(b)
+			if err != nil {
+				fmt.Printf("the last batch failed: %v\n", err)
+				return
+			}
+			fmt.Printf("current state: %v, %v\n", w, d)
 
-	for o, order := range orders[0][0][2100:2200] {
-		orderJson, err := json.Marshal(order)
-		if err != nil {
-			fmt.Printf("Json parser error: %v, o: %v\n", err, o)
-			return
 		}
-		fmt.Println(order.OrderId)
-		err = session.Query(`INSERT INTO cs5424_groupi.orders JSON ?`, string(orderJson)).Exec()
+	}
+}
+
+func CQLLoadStock() {
+	file, err := os.Open("data/data_files/stock.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	// 设置返回记录中每行数据期望的字段数，-1 表示返回所有字段
+	reader.FieldsPerRecord = -1
+	// 通过 readAll 方法返回 csv 文件中的所有内容
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	var stocks [][]cassandra.Stock
+	var stockCounters [][]cassandra.StockCounter
+	stocks = make([][]cassandra.Stock, 10)
+	stockCounters = make([][]cassandra.StockCounter, 10)
+
+	for _, record := range records {
+		wareHouseId, _ := strconv.Atoi(record[0])
+		itemId, _ := strconv.Atoi(record[1])
+		quantity, _ := strconv.Atoi(record[2])
+		yearToDateQuantityOrdered, _ := strconv.Atoi(record[3])
+		ordersNumber, _ := strconv.Atoi(record[4])
+		remoteOrdersNumber, _ := strconv.Atoi(record[5])
+
+		stockInfo := cassandra.StockInfo{
+			District1Info:     record[6],
+			District2Info:     record[7],
+			District3Info:     record[8],
+			District4Info:     record[9],
+			District5Info:     record[10],
+			District6Info:     record[11],
+			District7Info:     record[12],
+			District8Info:     record[13],
+			District9Info:     record[14],
+			District10Info:    record[15],
+			MiscellaneousData: record[16],
+		}
+
+		stock := cassandra.Stock{
+			WarehouseId: wareHouseId,
+			ItemId:      itemId,
+			BasicInfo:   stockInfo,
+		}
+
+		stockCounter := cassandra.StockCounter{
+			WarehouseId:   wareHouseId,
+			ItemId:        itemId,
+			Quantity:      quantity,
+			TotalQuantity: yearToDateQuantityOrdered,
+			OrderCount:    ordersNumber,
+			RemoteCount:   remoteOrdersNumber,
+		}
+
+		stocks[wareHouseId-1] = append(stocks[wareHouseId-1], stock)
+		stockCounters[wareHouseId-1] = append(stockCounters[wareHouseId-1], stockCounter)
+
+	}
+
+	for w, stock1Layer := range stocks {
+		var b = session.NewBatch(gocql.UnloggedBatch)
+		for i, stock := range stock1Layer {
+			if i != 0 && i%1000 == 0 {
+				err = session.ExecuteBatch(b)
+				if err != nil {
+					fmt.Printf("mid batch failed: item id:%v, err: %v\n", i-1, err)
+					return
+				}
+				b = session.NewBatch(gocql.UnloggedBatch)
+				fmt.Printf("current state: %v, %v\n", w, i)
+			}
+			stockJson, _ := json.Marshal(&stock)
+			if err != nil {
+				fmt.Printf("stock json parse error: %v\n", err)
+				return
+			}
+			b.Entries = append(b.Entries, gocql.BatchEntry{
+				Stmt:       "INSERT INTO cs5424_groupi.stocks JSON ?",
+				Args:       []interface{}{string(stockJson)},
+				Idempotent: true,
+			})
+			stockCounter := stockCounters[w][i]
+			b.Entries = append(b.Entries, gocql.BatchEntry{
+				Stmt: "UPDATE cs5424_groupi.stock_counters SET " +
+					"order_count = order_count + ?, remote_count = remote_count + ?, quantity = quantity + ?, total_quantity = total_quantity + ? " +
+					"WHERE warehouse_id = ? AND item_id = ?",
+				Args:       []interface{}{stockCounter.OrderCount, stockCounter.RemoteCount, stockCounter.Quantity, stockCounter.TotalQuantity, stockCounter.WarehouseId, stockCounter.ItemId},
+				Idempotent: false,
+			})
+		}
+
+		err = session.ExecuteBatch(b)
 		if err != nil {
-			fmt.Printf("Insert error for: %v\n", string(orderJson))
-			fmt.Println(err)
+			fmt.Printf("final batch failed: err: %v\n", err)
 			return
 		}
 	}
-
-	fmt.Println("finish")
-
-	//for w, order2Layer := range orders {
-	//	for d, order3Layer := range order2Layer {
-	//		var b = session.NewBatch(gocql.UnloggedBatch)
-	//		for o, order := range order3Layer {
-	//			if o != 0 && o%1000 == 0 {
-	//				err = session.ExecuteBatch(b)
-	//				if err != nil {
-	//					fmt.Printf("mid batch failed: warehouse id: %v, district_id: %v, order id:%v, err: %v\n", w, d, o, err)
-	//					return
-	//				}
-	//				b = session.NewBatch(gocql.UnloggedBatch)
-	//				fmt.Printf("current state: %v, %v, %v\n", w, d, o)
-	//			}
-	//			orderJson, err := json.Marshal(order)
-	//			if err != nil {
-	//				fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
-	//			}
-	//			b.Entries = append(b.Entries, gocql.BatchEntry{
-	//				Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
-	//				Args:       []interface{}{string(orderJson)},
-	//				Idempotent: true,
-	//			})
-	//		}
-	//		err = session.ExecuteBatch(b)
-	//		if err != nil {
-	//			fmt.Printf("the last batch failed: %v\n", err)
-	//			return
-	//		}
-	//		fmt.Printf("current state: %v, %v\n", w, d)
-	//
-	//	}
-	//}
 
 }

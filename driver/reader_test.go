@@ -2,7 +2,9 @@ package driver
 
 import (
 	"fmt"
+	"github.com/goccy/go-json"
 	"testing"
+	"time"
 )
 
 func TestSqlClient(t *testing.T) {
@@ -11,8 +13,14 @@ func TestSqlClient(t *testing.T) {
 }
 
 func TestSqlClient2(t *testing.T) {
-	s := make([]int, 10)
-	for i, t := range s[3:] {
-		fmt.Println(i, t)
+
+	type test struct {
+		A int       `json:"a,omitempty"`
+		T time.Time `json:"t,omitempty"`
 	}
+
+	timer := test{A: 1}
+	j, _ := json.Marshal(timer)
+	fmt.Println(string(j))
+
 }
