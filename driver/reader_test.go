@@ -9,7 +9,7 @@ import (
 
 func TestSqlClient(t *testing.T) {
 	filePath := "../data/test_xact_files/test.txt"
-	SqlClient(filePath, 0)
+	CqlClient(filePath, 0)
 }
 
 func TestSqlClient2(t *testing.T) {

@@ -7,20 +7,6 @@ import (
 	"log"
 )
 
-type OrderInfo struct {
-	WarehouseId int
-	DistrictId  int
-	OrderId     int
-	CustomerId  int
-	OrderLines  []cassandra.OrderLine
-}
-
-type CustomerIdentifier struct {
-	WarehouseId int
-	DistrictId  int
-	CustomerId  int
-}
-
 func RelatedCustomerTransaction(warehouseId, districtId, customerId int) error {
 	var itemIdSets []map[int]bool
 	var orderInfosByCustomer []OrderInfo

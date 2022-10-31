@@ -434,6 +434,11 @@ func CQLLoadOrder() {
 
 			CarrierId: carrierId,
 		}
+
+		if orderId > customers[warehouseId-1][districtId-1][customerId-1].LastOrderId {
+			customers[warehouseId-1][districtId-1][customerId-1].LastOrderId = orderId
+		}
+
 		orders[warehouseId-1][districtId-1] = append(orders[warehouseId-1][districtId-1], order)
 	}
 	file.Close()
@@ -471,6 +476,39 @@ func CQLLoadOrder() {
 
 		}
 	}
+
+	//fmt.Println("update customer last order")
+
+	for w, customer2Layer := range customers {
+		for d, customer3Layer := range customer2Layer {
+			var b = session.NewBatch(gocql.UnloggedBatch)
+			for c, customer := range customer3Layer {
+				if c != 0 && c%1000 == 0 {
+					err = session.ExecuteBatch(b)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+					b = session.NewBatch(gocql.UnloggedBatch)
+					fmt.Printf("update customer current state: %v, %v, %v\n", w, d, c)
+				}
+				b.Entries = append(b.Entries, gocql.BatchEntry{
+					Stmt:       "UPDATE cs5424_groupi.customers SET last_order_id = ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+					Args:       []interface{}{customer.LastOrderId, customer.WarehouseId, customer.DistrictId, customer.CustomerId},
+					Idempotent: true,
+				})
+
+			}
+			err = session.ExecuteBatch(b)
+			fmt.Printf("update customer current state: %v, %v\n", w, d)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+		}
+	}
+
 }
 
 func CQLLoadStock() {

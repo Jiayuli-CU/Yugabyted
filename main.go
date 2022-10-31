@@ -33,6 +33,6 @@ func main() {
 	//cassandra2.PaymentTransaction(1, 1, 1, 23.0)
 	//data.CQLLoadOrder()
 	//cassandra2.OrderStatusTransaction(1, 1, 1)
-	data.CQLLoadStock()
+	data.CQLLoadOrder()
 
 }
