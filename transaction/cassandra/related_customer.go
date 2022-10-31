@@ -1,20 +1,20 @@
 package cassandra
 
 import (
+	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"github.com/gocql/gocql"
 	"log"
 )
 
-func RelatedCustomerTransaction(warehouseId, districtId, customerId int) error {
+func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, customerId int) error {
 	var itemIdSets []map[int]bool
 	var orderInfosByCustomer []OrderInfo
 	// find orders of this customer
 	GetOrdersByCustomerQuery := fmt.Sprintf(`SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders 
                                                         WHERE warehouse_id = %v AND district_id = %v customer_id = %v`, warehouseId, districtId, customerId)
 
-	scanner := session.Query(GetOrdersByCustomerQuery).Iter().Scanner()
+	scanner := session.Query(GetOrdersByCustomerQuery).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var (
 			_warehouseId int
@@ -53,7 +53,7 @@ func RelatedCustomerTransaction(warehouseId, districtId, customerId int) error {
 	var allOrderInfos []OrderInfo
 	GetAllOderInfosQuery := `SELECT warehouse_id, district_id, order_id, customer_id FROM cs5424_groupI.orders`
 	if err := session.Query(GetAllOderInfosQuery).
-		Consistency(gocql.Quorum).
+		WithContext(ctx).
 		Scan(&allOrderInfos); err != nil {
 		log.Print(err)
 		return err

@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
 	"log"
@@ -14,7 +15,7 @@ type CustomerBalanceInfo struct {
 	CustomerId  int
 }
 
-func TopBalanceTransaction() error {
+func TopBalanceTransaction(ctx context.Context) error {
 	/*
 		This transaction finds the top-10 customers ranked in descending order of their outstanding balance payments
 	*/
@@ -23,7 +24,7 @@ func TopBalanceTransaction() error {
 
 	GetAllBalance := `SELECT warehouse_id, district_id, customer_id, balance FROM cs5424_groupI.customer_counters;`
 
-	scanner := session.Query(GetAllBalance).Iter().Scanner()
+	scanner := session.Query(GetAllBalance).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var (
 			_warehouseId int
@@ -51,6 +52,8 @@ func TopBalanceTransaction() error {
 		return customerBalanceInfos[i].Balance > customerBalanceInfos[j].Balance
 	})
 
+	var outputs []TopBalanceTransactionOutput
+
 	for i := 0; i < 10; i++ {
 		customerBalanceInfo := customerBalanceInfos[i]
 		var (
@@ -73,15 +76,19 @@ func TopBalanceTransaction() error {
 			return err
 		}
 
-		fmt.Printf(`
-		rank: %v,
-		customer name: (%v, %v, %v),
-		balance: %v,
-		warehouse name: %v,
-		district name: %v
-		`, i+1, customerBasicInfo.FirstName, customerBasicInfo.MiddleName, customerBasicInfo.LastName,
-			customerBalanceInfo.Balance, warehouseBasicInfo.Name, districtInfo.Name)
+		output := TopBalanceTransactionOutput{
+			FirstName:     customerBasicInfo.FirstName,
+			MiddleName:    customerBasicInfo.MiddleName,
+			LastName:      customerBasicInfo.LastName,
+			Balance:       float32(customerBalanceInfo.Balance) / 100,
+			WarehouseName: warehouseBasicInfo.Name,
+			DistrictName:  districtInfo.Name,
+		}
+
+		outputs = append(outputs, output)
 	}
+
+	fmt.Printf("%+v\n", outputs)
 
 	return nil
 }

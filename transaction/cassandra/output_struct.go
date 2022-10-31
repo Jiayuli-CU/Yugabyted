@@ -81,3 +81,39 @@ type OrderStatusTransactionOutput struct {
 	CarrierId   int                   `json:"carrier_id,omitempty"`
 	Items       []OrderStatusItemInfo `json:"items,omitempty"`
 }
+
+type TopBalanceTransactionOutput struct {
+	FirstName     string  `json:"first_name,omitempty"`
+	MiddleName    string  `json:"middle_name,omitempty"`
+	LastName      string  `json:"last_name,omitempty"`
+	Balance       float32 `json:"balance,omitempty"`
+	WarehouseName string  `json:"warehouse_name,omitempty"`
+	DistrictName  string  `json:"district_name,omitempty"`
+}
+
+type PopularItemTransactionOutput struct {
+	WarehouseId                int                                  `json:"warehouse_id,omitempty"`
+	DistrictId                 int                                  `json:"district_id,omitempty"`
+	NumberOfOrdersToBeExamined int                                  `json:"number_of_orders_to_be_examined,omitempty"`
+	OrderInfos                 []OrderInfoForPopularItemTransaction `json:"order_infos,omitempty"`
+	PopularItemPercentages     []PopularItemPercentage              `json:"popular_item_percentages,omitempty"`
+}
+
+type OrderInfoForPopularItemTransaction struct {
+	OrderId                  int                                 `json:"order_id,omitempty"`
+	EntryTime                time.Time                           `json:"entry_time,omitempty"`
+	FirstName                string                              `json:"first_name,omitempty"`
+	MiddleName               string                              `json:"middle_name,omitempty"`
+	LastName                 string                              `json:"last_name,omitempty"`
+	PopularItemsForThisOrder []ItemInfoForPopularItemTransaction `json:"popular_items_for_this_order,omitempty"`
+}
+
+type ItemInfoForPopularItemTransaction struct {
+	ItemName string `json:"item_name,omitempty"`
+	Quantity int    `json:"quantity,omitempty"`
+}
+
+type PopularItemPercentage struct {
+	ItemName   string  `json:"item_name,omitempty"`
+	Percentage float32 `json:"percentage,omitempty"`
+}

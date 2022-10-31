@@ -1,20 +1,20 @@
 package cassandra
 
 import (
+	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"github.com/gocql/gocql"
 	"log"
 )
 
-func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders int) error {
+func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockThreshold, numOrders int) error {
 	// find next available order number for (warehouseId, DistrictId)
 	var nextOrderNumber int
 	var numItemsBelowThreshold int
 
 	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
 	if err := session.Query(GetNextOrderNumberQuery).
-		Consistency(gocql.Quorum).
+		WithContext(ctx).
 		Scan(&nextOrderNumber); err != nil {
 		log.Printf("Find next order number error when querying district table: %v\n", err)
 		return err
@@ -44,7 +44,7 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 		var stockQuantity int
 		GetItemStockQuantityQuery := fmt.Sprintf(`SELECT quantity FROM cs5424_groupI.stock_counters WHERE warehouse_id = %v AND item_id = %v LIMIT 1`, warehouseId, itemId)
 		if err := session.Query(GetItemStockQuantityQuery).
-			Consistency(gocql.Quorum).
+			WithContext(ctx).
 			Scan(&stockQuantity); err != nil {
 			log.Printf("Find item quantity error when querying stock_counter table: %v\n", err)
 			return err

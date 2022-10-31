@@ -1,23 +1,20 @@
 package cassandra
 
 import (
+	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"github.com/gocql/gocql"
 	"log"
 	"time"
 )
 
-func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
-	fmt.Printf("warehouseId: %v, districtId: %v\n", warehouseId, districtId)
-	fmt.Printf("Number of last oders to be examined: %v\n", numOrders)
-
+func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrders int) error {
 	// find next available order number for (warehouseId, DistrictId)
 	var nextOrderNumber int
 
 	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
 	if err := session.Query(GetNextOrderNumberQuery).
-		Consistency(gocql.Quorum).
+		WithContext(ctx).
 		Scan(&nextOrderNumber); err != nil {
 		log.Printf("Find next order number error when querying district table: %v\n", err)
 		return err
@@ -31,7 +28,7 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 	fmt.Println("For each order:")
 
 	// get all required orders
-	var orders []orderInfo
+	var orderInfos []OrderInfoForPopularItemTransaction
 	GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders 
                                                                              WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
 		warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
@@ -51,30 +48,13 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 			log.Fatal(err)
 		}
 
-		order := orderInfo{
-			orderId:    _orderId,
-			orderLines: _orderLines,
-			entryTime:  _entryTime,
-			firstName:  _firstName,
-			middleName: _middleName,
-			lastName:   _lastName,
-		}
-
-		orders = append(orders, order)
-	}
-
-	// for each order
-	for _, order := range orders {
-		// get the set of orderLines of this order
-		fmt.Printf("orderId: %v, entry date and time: %v\n", order.orderId, order.entryTime)
-		fmt.Printf("%v, %v, %v", order.firstName, order.middleName, order.lastName)
-
+		var _popularItemsForThisOrder []ItemInfoForPopularItemTransaction
 		itemIds := map[int]bool{}
 
 		// find the max quantity for this order
 		var maxQuantity int
 
-		for _, orderLine := range order.orderLines {
+		for _, orderLine := range _orderLines {
 			itemIds[orderLine.ItemId] = true
 
 			if orderLine.Quantity > maxQuantity {
@@ -83,17 +63,33 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 		}
 
 		// find the popular item for this order (could be more than 1 popular item)
-		for _, orderLine := range order.orderLines {
+		for _, orderLine := range _orderLines {
 			if orderLine.Quantity == maxQuantity {
 				popularItemIds[orderLine.ItemId] = true
 				itemIdToName[orderLine.ItemId] = orderLine.ItemName
-				fmt.Printf("ItemName: %v,\tQuantity: %v", orderLine.ItemName, orderLine.Quantity)
+				popularItem := ItemInfoForPopularItemTransaction{
+					ItemName: orderLine.ItemName,
+					Quantity: orderLine.Quantity,
+				}
+				_popularItemsForThisOrder = append(_popularItemsForThisOrder, popularItem)
 			}
 		}
 
-		itemIdSetForEachOrder[order.orderId] = itemIds
+		orderInfo := OrderInfoForPopularItemTransaction{
+			OrderId:                  _orderId,
+			EntryTime:                _entryTime,
+			FirstName:                _firstName,
+			MiddleName:               _middleName,
+			LastName:                 _lastName,
+			PopularItemsForThisOrder: _popularItemsForThisOrder,
+		}
+
+		itemIdSetForEachOrder[orderInfo.OrderId] = itemIds
+
+		orderInfos = append(orderInfos, orderInfo)
 	}
 
+	var popularItemPercentages []PopularItemPercentage
 	// calculate the percentage of examined orders that contain each popular item
 	for itemId, _ := range popularItemIds {
 		itemName := itemIdToName[itemId]
@@ -105,18 +101,23 @@ func PopularItemTransaction(warehouseId, districtId, numOrders int) error {
 			}
 		}
 
-		percentage := count * 100.0 / numOrders
-		fmt.Printf("popular item name: %v, percentage: %v\n", itemName, percentage)
+		percentage := float32(count) * 100 / float32(numOrders)
+		itemPercentage := PopularItemPercentage{
+			ItemName:   itemName,
+			Percentage: percentage,
+		}
+		popularItemPercentages = append(popularItemPercentages, itemPercentage)
 	}
 
-	return nil
-}
+	output := PopularItemTransactionOutput{
+		WarehouseId:                warehouseId,
+		DistrictId:                 districtId,
+		NumberOfOrdersToBeExamined: numOrders,
+		OrderInfos:                 orderInfos,
+		PopularItemPercentages:     popularItemPercentages,
+	}
 
-type orderInfo struct {
-	orderId    int
-	orderLines []cassandra.OrderLine
-	entryTime  time.Time
-	firstName  string
-	middleName string
-	lastName   string
+	fmt.Printf("%+v", output)
+
+	return nil
 }
