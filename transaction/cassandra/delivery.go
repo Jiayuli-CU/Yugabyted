@@ -31,17 +31,19 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 
 	for districtId := 1; districtId <= 10; districtId++ {
 		deliveryOrderId := 0
-		for {
-			err = session.Query(`SELECT next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).
-				WithContext(ctx).Scan(&deliveryOrderId)
-			if err != nil {
-				log.Printf("Find district error: %v\n", err)
-				continue
-			}
 
-			err = session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
-				WithContext(ctx).Exec()
-			if err == nil {
+		err = session.Query(`SELECT next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).
+			WithContext(ctx).Scan(&deliveryOrderId)
+		if err != nil {
+			log.Printf("Find district error: %v\n", err)
+			return err
+		}
+
+		//CAS
+		for {
+			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+				WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
+			if applied && err == nil {
 				deliveryOrderIds[districtId-1] = deliveryOrderId
 				break
 			}
