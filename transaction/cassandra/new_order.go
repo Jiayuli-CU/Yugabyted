@@ -26,18 +26,18 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		}
 	}
 
+	err = session.Query(`SELECT warehouse_tax_rate, district_tax_rate, next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).
+		Scan(&warehouseTax, &districtTax, &orderId)
+	if err != nil {
+		log.Printf("Find district error: %v\n", err)
+		return err
+	}
+
 	//CAS to handle concurrent read and write
 	for {
-		err = session.Query(`SELECT warehouse_tax_rate, district_tax_rate, next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).
-			Scan(&warehouseTax, &districtTax, &orderId)
-		if err != nil {
-			log.Printf("Find district error: %v\n", err)
-			continue
-		}
-
-		err = session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, orderId+1, warehouseId, districtId, orderId).
-			WithContext(ctx).Exec()
-		if err == nil {
+		applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, orderId+1, warehouseId, districtId, orderId).
+			WithContext(ctx).ScanCAS(nil, nil, &orderId)
+		if applied && err == nil {
 			break
 		}
 	}
