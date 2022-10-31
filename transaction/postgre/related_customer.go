@@ -44,20 +44,22 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) erro
 			return err
 		}
 		for _, customer := range customers {
-			customerItemSet, err := getCustomerOrderItemsTransaction(customer)
-			if err != nil {
-				continue
-			}
-			countCommon := 0
-			for key, _ := range customerItemSet {
-				if currCustomerItemSet[key] {
-					countCommon++
+			go func() {
+				customerItemSet, err := getCustomerOrderItemsTransaction(customer)
+				if err != nil {
+					return
 				}
-				if countCommon >= 2 {
-					log.Printf("Related customer info: warehouse_id = %v, district_id = %v, customer_id = %v", customer.WarehouseId, customer.DistrictId, customer.Id)
-					break
+				countCommon := 0
+				for key, _ := range customerItemSet {
+					if currCustomerItemSet[key] {
+						countCommon++
+					}
+					if countCommon >= 2 {
+						log.Printf("Related customer info: warehouse_id = %v, district_id = %v, customer_id = %v", customer.WarehouseId, customer.DistrictId, customer.Id)
+						return
+					}
 				}
-			}
+			}()
 		}
 	}
 	return err
