@@ -43,7 +43,7 @@ func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
 		order.CarrierId,
 	)
 	for _, orderLine := range orderLines {
-		log.Printf("Customer order item info: order info = %v, warehouse id = %v, quantity ordered = %v, total price = %v, delivery time = %v\n",
+		log.Printf("Customer order item info: item id = %v, warehouse id = %v, quantity ordered = %v, total price = %v, delivery time = %v\n",
 			orderLine.ItemId,
 			orderLine.WarehouseId,
 			orderLine.Quantity,

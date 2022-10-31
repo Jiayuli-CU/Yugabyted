@@ -23,7 +23,7 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 		//			• Increment C_DELIVERY_CNT by 1
 		for districtId := 1; districtId <= 10; districtId++ {
 			var order models.Order
-			if err := tx.Model(&models.Order{}).Where("carrier_id = null AND warehouse_id = ? AND district_id = ?", warehouseId, districtId).First(&order).Error; err != nil {
+			if err := tx.Model(&models.Order{}).Where("carrier_id = 0 AND warehouse_id = ? AND district_id = ?", warehouseId, districtId).First(&order).Error; err != nil {
 				log.Printf("First order error: %v\n", err)
 				return err
 			}
