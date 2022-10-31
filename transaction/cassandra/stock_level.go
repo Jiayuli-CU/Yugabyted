@@ -22,18 +22,17 @@ func StockLevelTransaction(warehouseId, districtId, stockThreshold, numOrders in
 
 	// collect the set of itemIds
 	itemIds := map[int]bool{}
-	var orderLines []cassandra.OrderLine
+	var orderLinesList [][]cassandra.OrderLine
+	GetOrderLinesListQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupI.orders 
+                   WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
+		warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
+	if err := session.Query(GetOrderLinesListQuery).
+		Scan(&orderLinesList); err != nil {
+		log.Printf("Find orderlines error when querying orders table: %v\n", err)
+		return err
+	}
 
-	for orderNumber := nextOrderNumber - numOrders; orderNumber < nextOrderNumber; orderNumber++ {
-		// get the set of orderLines of this order
-		GetOrderLinesQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupI.orders WHERE warehouse_id = %v AND district_id = %v AND order_id = %v LIMIT 1`, warehouseId, districtId, orderNumber)
-		if err := session.Query(GetOrderLinesQuery).
-			Consistency(gocql.Quorum).
-			Scan(&orderLines); err != nil {
-			log.Printf("Find orderlines error when querying orders table: %v\n", err)
-			return err
-		}
-
+	for _, orderLines := range orderLinesList {
 		for _, orderLine := range orderLines {
 			itemIds[orderLine.ItemId] = true
 		}
