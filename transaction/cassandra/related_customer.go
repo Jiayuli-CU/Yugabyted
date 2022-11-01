@@ -88,6 +88,8 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 			CustomerId:  orderInfo.CustomerId,
 		}
 
+		key := fmt.Sprintf("%d:%d;%d", orderInfo.WarehouseId, orderInfo.DistrictId, orderInfo.CustomerId)
+
 		// check if this customer is already a related customer
 		if relatedCustomers[customerIdentifier] == true {
 			continue

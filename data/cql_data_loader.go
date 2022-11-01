@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gocql/gocql"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -13,7 +14,14 @@ import (
 
 var session = cassandra.GetSession()
 
-func CqlLoadWarehouse() []cassandra.Warehouse {
+func CqlDataLoader() {
+	warehouses := parseAndLoadWarehouse()
+	districts := parseAndLoadDistrict(warehouses)
+	customers, customerCounters := parseCustomerAndCounter()
+
+}
+
+func parseAndLoadWarehouse() []cassandra.Warehouse {
 	file, err := os.Open("data/data_files/warehouse.csv")
 	if err != nil {
 		panic(err)
@@ -48,14 +56,9 @@ func CqlLoadWarehouse() []cassandra.Warehouse {
 			TaxRate:            float32(taxRate),
 		}
 
-		//warehouseCounter := cassandra.WarehouseCounter{
-		//	WarehouseId:      id,
-		//	YearToDateAmount: int(yearToDateAmount * 100),
-		//}
-
-		err = session.Query(`UPDATE cs5424_groupi.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(yearToDateAmount*100), id).Exec()
+		err = insertWarehouseCounter(id, yearToDateAmount)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("fail to insert warehouse counter, error: %v\n", err)
 			return nil
 		}
 	}
@@ -63,9 +66,12 @@ func CqlLoadWarehouse() []cassandra.Warehouse {
 	return warehouses
 }
 
-func CQLLoadDistrict() {
-	warehouses := CqlLoadWarehouse()
+func insertWarehouseCounter(warehouseId int, yearToDateAmount float64) error {
+	err := session.Query(`UPDATE cs5424_groupi.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(yearToDateAmount*100), warehouseId).Exec()
+	return err
+}
 
+func parseAndLoadDistrict(warehouses []cassandra.Warehouse) [][]cassandra.District {
 	file, err := os.Open("data/data_files/district.csv")
 	if err != nil {
 		panic(err)
@@ -115,6 +121,12 @@ func CQLLoadDistrict() {
 		districtsCounter[warehouseId-1] = append(districtsCounter[warehouseId-1], int(yearToDateAmount*100))
 	}
 
+	insertDistrictAndCounter(districts, districtsCounter)
+
+	return districts
+}
+
+func insertDistrictAndCounter(districts [][]cassandra.District, districtsCounter [][]int) {
 	for w, subDistricts := range districts {
 		b := session.NewBatch(gocql.UnloggedBatch)
 		for d, district := range subDistricts {
@@ -130,14 +142,15 @@ func CQLLoadDistrict() {
 				Idempotent: false,
 			})
 		}
-		err = session.ExecuteBatch(b)
+		err := session.ExecuteBatch(b)
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 	}
 }
 
-func readCustomer() ([][][]cassandra.Customer, [][][]cassandra.CustomerCounter) {
+func parseCustomerAndCounter() ([][][]cassandra.Customer, [][][]cassandra.CustomerCounter) {
 	file, err := os.Open("data/data_files/customer.csv")
 	if err != nil {
 		panic(err)
@@ -208,7 +221,7 @@ func readCustomer() ([][][]cassandra.Customer, [][][]cassandra.CustomerCounter) 
 
 func CQLLoadCustomer() {
 	var err error
-	customers, customerCounters := readCustomer()
+	customers, customerCounters := parseCustomerAndCounter()
 
 	for w, customer2Layer := range customers {
 		for d, customer3Layer := range customer2Layer {
@@ -406,7 +419,7 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 
 func CQLLoadOrder() {
 
-	customers, _ := readCustomer()
+	customers, _ := parseCustomerAndCounter()
 
 	var err error
 
