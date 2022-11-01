@@ -24,3 +24,8 @@ func TestSqlClient2(t *testing.T) {
 	fmt.Println(string(j))
 
 }
+
+func TestTopBalanceTransaction(t *testing.T) {
+	filePath := "../data/test_xact_files/test.txt"
+	CqlClient(filePath, 0)
+}

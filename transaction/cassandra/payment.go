@@ -20,7 +20,7 @@ func PaymentTransaction(ctx context.Context, warehouseId, districtId, customerId
 	var discount float32
 	var balanceInt int
 
-	if err = session.Query(`SELECT basic_info, discount FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, warehouseId, districtId, customerId).
+	if err = session.Query(`SELECT basic_info, discount_rate FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, warehouseId, districtId, customerId).
 		WithContext(ctx).Scan(&customerBasicInfo, &discount); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
@@ -46,7 +46,7 @@ func PaymentTransaction(ctx context.Context, warehouseId, districtId, customerId
 	warehouseAddress := cassandra.WarehouseBasicInfo{}
 	districtInfoAddress := cassandra.DistrictInfo{}
 
-	if err = session.Query(`SELECT district_address, warehouse_address FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ?`, warehouseId, districtId).
+	if err = session.Query(`SELECT district_address, warehouse_address FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ?`, warehouseId, districtId).
 		WithContext(ctx).Scan(&warehouseAddress, &districtInfoAddress); err != nil {
 		log.Printf("Find district counter error: %v\n", err)
 		return err
@@ -72,6 +72,7 @@ func PaymentTransaction(ctx context.Context, warehouseId, districtId, customerId
 	}
 
 	output := PaymentTransactionOutput{
+		TransactionType:  "Payment Transaction",
 		CustomerInfo:     customerInfo,
 		WarehouseAddress: warehouseAddress,
 		DistrictAddress:  districtInfoAddress,
@@ -79,6 +80,7 @@ func PaymentTransaction(ctx context.Context, warehouseId, districtId, customerId
 	}
 
 	fmt.Printf("%+v\n", output)
+	println()
 
 	return nil
 }

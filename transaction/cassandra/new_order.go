@@ -15,8 +15,8 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 	var totalAmountInt int
 	var orderLines []cassandra.OrderLine
 	var orderId int
-	var credit, lastName string
 	var err error
+	var customerBasicInfo cassandra.CustomerInfo
 
 	local := 1
 	for _, w := range supplierWarehouses {
@@ -42,8 +42,8 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		}
 	}
 
-	if err = session.Query(`SELECT discount_rate, last_name, credit FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
-		WithContext(ctx).Scan(&discount, &lastName, &credit); err != nil {
+	if err = session.Query(`SELECT discount_rate, basic_info FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
+		WithContext(ctx).Scan(&discount, &customerBasicInfo); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
 	}
@@ -54,8 +54,8 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 			DistrictId:  districtId,
 			CustomerId:  customerId,
 		},
-		LastName: lastName,
-		Credit:   credit,
+		LastName: customerBasicInfo.LastName,
+		Credit:   customerBasicInfo.Credit,
 		Discount: discount,
 	}
 
@@ -158,6 +158,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 	}
 
 	fmt.Printf("%+v\n", output)
+	println()
 
 	return nil
 }

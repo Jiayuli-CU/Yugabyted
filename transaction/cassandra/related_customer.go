@@ -4,6 +4,7 @@ import (
 	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 )
 
@@ -51,12 +52,26 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 
 	// iterate over all orders
 	var allOrderInfos []OrderInfo
-	GetAllOderInfosQuery := `SELECT warehouse_id, district_id, order_id, customer_id FROM cs5424_groupI.orders`
-	if err := session.Query(GetAllOderInfosQuery).
-		WithContext(ctx).
-		Scan(&allOrderInfos); err != nil {
-		log.Print(err)
-		return err
+	GetAllOderInfosQuery := `SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders`
+	scanner = session.Query(GetAllOderInfosQuery).Iter().Scanner()
+	for scanner.Next() {
+		var (
+			_warehouseId int
+			_district_id int
+			_order_id    int
+			_customer_id int
+			_orderLines  []cassandra.OrderLine
+		)
+
+		orderInfo := OrderInfo{
+			WarehouseId: _warehouseId,
+			DistrictId:  _district_id,
+			OrderId:     _order_id,
+			CustomerId:  _customer_id,
+			OrderLines:  _orderLines,
+		}
+
+		allOrderInfos = append(allOrderInfos, orderInfo)
 	}
 
 	var relatedCustomers map[CustomerIdentifier]bool
@@ -96,10 +111,12 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		}
 	}
 
-	for relatedCustomer, _ := range relatedCustomers {
-		fmt.Printf("(warehouseId: %v, districtId: %v, customerId: %v)",
-			relatedCustomer.WarehouseId, relatedCustomer.DistrictId, relatedCustomer.CustomerId)
+	output := RelatedCustomerTransactionOutput{
+		TransactionType:            "Related Customer Transaction",
+		RelatedCustomerIdentifiers: maps.Keys(relatedCustomers),
 	}
 
+	fmt.Printf("%+v\n", output)
+	println()
 	return nil
 }

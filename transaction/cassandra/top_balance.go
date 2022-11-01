@@ -77,18 +77,20 @@ func TopBalanceTransaction(ctx context.Context) error {
 		}
 
 		output := TopBalanceTransactionOutput{
-			FirstName:     customerBasicInfo.FirstName,
-			MiddleName:    customerBasicInfo.MiddleName,
-			LastName:      customerBasicInfo.LastName,
-			Balance:       float32(customerBalanceInfo.Balance) / 100,
-			WarehouseName: warehouseBasicInfo.Name,
-			DistrictName:  districtInfo.Name,
+			TransactionType: "Top Balance Transaction",
+			FirstName:       customerBasicInfo.FirstName,
+			MiddleName:      customerBasicInfo.MiddleName,
+			LastName:        customerBasicInfo.LastName,
+			Balance:         float32(customerBalanceInfo.Balance) / 100,
+			WarehouseName:   warehouseBasicInfo.Name,
+			DistrictName:    districtInfo.Name,
 		}
 
 		outputs = append(outputs, output)
 	}
 
 	fmt.Printf("%+v\n", outputs)
+	println()
 
 	return nil
 }

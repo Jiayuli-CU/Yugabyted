@@ -94,7 +94,7 @@ func LoadDistrict() {
 }
 
 func LoadCustomer() {
-	file, err := os.Open("./data_files/customer.csv")
+	file, err := os.Open("../data_files/customer.csv")
 	if err != nil {
 		panic(err)
 	}

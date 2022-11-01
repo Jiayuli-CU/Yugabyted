@@ -110,6 +110,7 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
 	}
 
 	output := PopularItemTransactionOutput{
+		TransactionType:            "Popular Item Transaction",
 		WarehouseId:                warehouseId,
 		DistrictId:                 districtId,
 		NumberOfOrdersToBeExamined: numOrders,
@@ -117,7 +118,8 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
 		PopularItemPercentages:     popularItemPercentages,
 	}
 
-	fmt.Printf("%+v", output)
+	fmt.Printf("%+v\n", output)
+	println()
 
 	return nil
 }

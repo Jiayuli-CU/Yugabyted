@@ -26,10 +26,11 @@ func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockTh
 	GetOrderLinesListQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupI.orders 
                    WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
 		warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
-	if err := session.Query(GetOrderLinesListQuery).
-		Scan(&orderLinesList); err != nil {
-		log.Printf("Find orderlines error when querying orders table: %v\n", err)
-		return err
+	scanner := session.Query(GetOrderLinesListQuery).WithContext(ctx).Iter().Scanner()
+	for scanner.Next() {
+		var orderLines []cassandra.OrderLine
+		scanner.Scan(&orderLines)
+		orderLinesList = append(orderLinesList, orderLines)
 	}
 
 	for _, orderLines := range orderLinesList {
@@ -55,6 +56,8 @@ func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockTh
 		}
 	}
 
+	fmt.Printf("TransactionType:Stock Level Transaction\t")
 	fmt.Printf("Number of items below threshold %v for warehouseId: %v : %v\n", stockThreshold, warehouseId, numItemsBelowThreshold)
+	println()
 	return nil
 }

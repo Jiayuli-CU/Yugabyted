@@ -43,13 +43,13 @@ func CqlClient(filepath string, clientNumber int) {
 		case "O":
 			orderStatusParser(ctx, info)
 		case "S":
-			stockLevelParser(info)
+			stockLevelParser(ctx, info)
 		case "I":
-			popularItemParser(info)
+			popularItemParser(ctx, info)
 		case "T":
-			topBalanceParser()
+			topBalanceParser(ctx)
 		case "R":
-			relatedCustomerParser(info)
+			relatedCustomerParser(ctx, info)
 
 		}
 		latencies = append(latencies, time.Since(startTransaction))
@@ -70,7 +70,7 @@ func CqlClient(filepath string, clientNumber int) {
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
 	fmt.Printf("client %v, total execution time: %v\n", clientNumber, executionSeconds)
-	fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
+	//fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
 	fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
 	fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
 	fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
@@ -133,39 +133,39 @@ func orderStatusParser(ctx context.Context, info []string) {
 	}
 }
 
-func stockLevelParser(info []string) {
+func stockLevelParser(ctx context.Context, info []string) {
 	warehouseId, _ := strconv.Atoi(info[1])
 	districtId, _ := strconv.Atoi(info[2])
 	threshold, _ := strconv.Atoi(info[3])
 	orderNumber, _ := strconv.Atoi(info[4])
-	err := cassandra.StockLevelTransaction(warehouseId, districtId, threshold, orderNumber)
+	err := cassandra.StockLevelTransaction(ctx, warehouseId, districtId, threshold, orderNumber)
 	if err != nil {
 		fmt.Printf("Stock-Level Transaction failed: %s\n", err.Error())
 	}
 }
 
-func popularItemParser(info []string) {
+func popularItemParser(ctx context.Context, info []string) {
 	warehouseId, _ := strconv.Atoi(info[1])
 	districtId, _ := strconv.Atoi(info[2])
 	orderNumber, _ := strconv.Atoi(info[3])
-	err := cassandra.PopularItemTransaction(warehouseId, districtId, orderNumber)
+	err := cassandra.PopularItemTransaction(ctx, warehouseId, districtId, orderNumber)
 	if err != nil {
 		fmt.Printf("Popular-Item Transaction failed: %s\n", err.Error())
 	}
 }
 
-func topBalanceParser() {
-	err := cassandra.TopBalanceTransaction()
+func topBalanceParser(ctx context.Context) {
+	err := cassandra.TopBalanceTransaction(ctx)
 	if err != nil {
 		fmt.Printf("Top-Balance Transaction failed: %s\n", err.Error())
 	}
 }
 
-func relatedCustomerParser(info []string) {
+func relatedCustomerParser(ctx context.Context, info []string) {
 	warehouseId, _ := strconv.Atoi(info[1])
 	districtId, _ := strconv.Atoi(info[2])
 	customerId, _ := strconv.Atoi(info[3])
-	err := cassandra.RelatedCustomerTransaction(customerId, warehouseId, districtId)
+	err := cassandra.RelatedCustomerTransaction(ctx, customerId, warehouseId, districtId)
 	if err != nil {
 		fmt.Printf("Related-Customer Transaction failed: %s\n", err.Error())
 	}

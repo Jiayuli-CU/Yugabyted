@@ -48,16 +48,18 @@ func OrderStatusTransaction(ctx context.Context, warehouseId, districtId, custom
 	}
 
 	output := OrderStatusTransactionOutput{
-		FirstName:   customerInfo.FirstName,
-		MiddleName:  customerInfo.MiddleName,
-		LastName:    customerInfo.LastName,
-		Balance:     float32(balanceInt) / 100,
-		LastOrderId: lastOrderId,
-		EntryDate:   entryTime,
-		CarrierId:   carrierId,
-		Items:       items,
+		TransactionType: "Order Status Transaction",
+		FirstName:       customerInfo.FirstName,
+		MiddleName:      customerInfo.MiddleName,
+		LastName:        customerInfo.LastName,
+		Balance:         float32(balanceInt) / 100,
+		LastOrderId:     lastOrderId,
+		EntryDate:       entryTime,
+		CarrierId:       carrierId,
+		Items:           items,
 	}
 
 	fmt.Printf("%+v\n", output)
+	println()
 	return nil
 }
