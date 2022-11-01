@@ -68,6 +68,8 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 			_orderLines  []cassandra.OrderLine
 		)
 
+		scanner.Scan(&_warehouseId, &_district_id, &_order_id, &_customer_id, &_orderLines)
+
 		orderInfo := OrderInfo{
 			WarehouseId: _warehouseId,
 			DistrictId:  _district_id,
@@ -79,7 +81,8 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		allOrderInfos = append(allOrderInfos, orderInfo)
 	}
 
-	var relatedCustomers map[CustomerIdentifier]bool
+	//var relatedCustomers map[CustomerIdentifier]bool
+	relatedCustomers := make(map[CustomerIdentifier]bool)
 
 	for _, orderInfo := range allOrderInfos {
 		// check if it is in the same warehouse
@@ -118,7 +121,6 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		}
 	}
 
-	fmt.Println(len(relatedCustomers))
 	output := RelatedCustomerTransactionOutput{
 		TransactionType:            "Related Customer Transaction",
 		RelatedCustomerIdentifiers: maps.Keys(relatedCustomers),
