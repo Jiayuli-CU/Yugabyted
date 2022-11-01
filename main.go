@@ -21,6 +21,7 @@ func main() {
 	//wg.Wait()
 	//fmt.Println("main exit")
 	defer cassandra.CloseSession()
+
 	//cassandra.QueryTest()
 
 	//var w []int
