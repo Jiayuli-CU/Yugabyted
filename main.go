@@ -3,6 +3,7 @@ package main
 import (
 	"cs5424project/driver"
 	"cs5424project/store/cassandra"
+	"fmt"
 )
 
 func main() {
@@ -22,6 +23,16 @@ func main() {
 	//fmt.Println("main exit")
 	defer cassandra.CloseSession()
 
+	//data.CqlDataLoader()
+	session := cassandra.GetSession()
+
+	var nextOrderNumber int
+
+	err := session.Query(`SELECT COUNT(*) FROM cs5424_groupi.districts`).Scan(&nextOrderNumber)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(nextOrderNumber)
 	//cassandra.QueryTest()
 
 	//var w []int
@@ -41,7 +52,7 @@ func main() {
 	//TestDeliveryTransaction()
 	//TestNewOrderTransaction()
 	//TestPopularItemTransaction()
-	TestRelatedCustomerTransaction()
+	//TestRelatedCustomerTransaction()
 	//TestStockLevelTransacction()
 }
 

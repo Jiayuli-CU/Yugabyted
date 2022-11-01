@@ -104,8 +104,8 @@ type PopularItemTransactionOutput struct {
 }
 
 type RelatedCustomerTransactionOutput struct {
-	TransactionType            string               `json:"transaction_type,omitempty"`
-	RelatedCustomerIdentifiers []CustomerIdentifier `json:"related_customer_identifiers,omitempty"`
+	TransactionType            string   `json:"transaction_type,omitempty"`
+	RelatedCustomerIdentifiers []string `json:"related_customer_identifiers,omitempty"`
 }
 
 type OrderInfoForPopularItemTransaction struct {

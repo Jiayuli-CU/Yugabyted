@@ -16,9 +16,18 @@ var session = cassandra.GetSession()
 
 func CqlDataLoader() {
 	warehouses := parseAndLoadWarehouse()
-	districts := parseAndLoadDistrict(warehouses)
-	customers, customerCounters := parseCustomerAndCounter()
+	districts, _ := parseDistrictAndCounter(warehouses)
+	items := parseItem()
+	//loadItem(items)
+	customers, _ := parseCustomerAndCounter()
+	orders := parseOrderAndUpdateCustomer(customers)
+	parseOrderLineAndUpdateDistrict(orders, items, districts)
 
+	fmt.Println(districts)
+	//loadDistrictAndCounter(districts, districtsCounter)
+	//loadCustomerAndCounter(customers, customerCounters)
+	//loadOrder(orders)
+	//parseAndLoadStock()
 }
 
 func parseAndLoadWarehouse() []cassandra.Warehouse {
@@ -56,7 +65,7 @@ func parseAndLoadWarehouse() []cassandra.Warehouse {
 			TaxRate:            float32(taxRate),
 		}
 
-		err = insertWarehouseCounter(id, yearToDateAmount)
+		err = loadWarehouseCounter(id, yearToDateAmount)
 		if err != nil {
 			log.Printf("fail to insert warehouse counter, error: %v\n", err)
 			return nil
@@ -66,12 +75,13 @@ func parseAndLoadWarehouse() []cassandra.Warehouse {
 	return warehouses
 }
 
-func insertWarehouseCounter(warehouseId int, yearToDateAmount float64) error {
-	err := session.Query(`UPDATE cs5424_groupi.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(yearToDateAmount*100), warehouseId).Exec()
-	return err
+func loadWarehouseCounter(warehouseId int, yearToDateAmount float64) error {
+	//err := session.Query(`UPDATE cs5424_groupi.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(yearToDateAmount*100), warehouseId).Exec()
+	//return err
+	return nil
 }
 
-func parseAndLoadDistrict(warehouses []cassandra.Warehouse) [][]cassandra.District {
+func parseDistrictAndCounter(warehouses []cassandra.Warehouse) ([][]cassandra.District, [][]int) {
 	file, err := os.Open("data/data_files/district.csv")
 	if err != nil {
 		panic(err)
@@ -121,12 +131,10 @@ func parseAndLoadDistrict(warehouses []cassandra.Warehouse) [][]cassandra.Distri
 		districtsCounter[warehouseId-1] = append(districtsCounter[warehouseId-1], int(yearToDateAmount*100))
 	}
 
-	insertDistrictAndCounter(districts, districtsCounter)
-
-	return districts
+	return districts, districtsCounter
 }
 
-func insertDistrictAndCounter(districts [][]cassandra.District, districtsCounter [][]int) {
+func loadDistrictAndCounter(districts [][]cassandra.District, districtsCounter [][]int) {
 	for w, subDistricts := range districts {
 		b := session.NewBatch(gocql.UnloggedBatch)
 		for d, district := range subDistricts {
@@ -219,9 +227,8 @@ func parseCustomerAndCounter() ([][][]cassandra.Customer, [][][]cassandra.Custom
 	return customers, customerCounters
 }
 
-func CQLLoadCustomer() {
+func loadCustomerAndCounter(customers [][][]cassandra.Customer, customerCounters [][][]cassandra.CustomerCounter) {
 	var err error
-	customers, customerCounters := parseCustomerAndCounter()
 
 	for w, customer2Layer := range customers {
 		for d, customer3Layer := range customer2Layer {
@@ -271,7 +278,7 @@ func CQLLoadCustomer() {
 	}
 }
 
-func readItem() []cassandra.Item {
+func parseItem() []cassandra.Item {
 	file, err := os.Open("data/data_files/item.csv")
 	if err != nil {
 		panic(err)
@@ -304,8 +311,7 @@ func readItem() []cassandra.Item {
 	return items
 }
 
-func CQLLoadItem() {
-	items := readItem()
+func loadItem(items []cassandra.Item) {
 
 	var b = session.NewBatch(gocql.UnloggedBatch)
 	var err error
@@ -335,13 +341,9 @@ func CQLLoadItem() {
 		fmt.Printf("final batch failed: err: %v\n", err)
 		return
 	}
-
 }
 
-func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
-
-	items := readItem()
-
+func parseOrderLineAndUpdateDistrict(orders [][][]cassandra.Order, items []cassandra.Item, districts [][]cassandra.District) {
 	file, err := os.Open("data/data_files/order-line.csv")
 	if err != nil {
 		panic(err)
@@ -358,12 +360,6 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 	}
 
 	var deliveryTime time.Time
-
-	var districtUpdateDelivery [][]int
-	districtUpdateDelivery = make([][]int, 10)
-	for i := 0; i < 10; i++ {
-		districtUpdateDelivery[i] = make([]int, 10)
-	}
 
 	for _, ol := range record {
 
@@ -390,8 +386,8 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 		}
 		if ol[5] != "null" {
 			orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = &deliveryTime
-			if orderId+1 > districtUpdateDelivery[warehouseId-1][districtId-1] {
-				districtUpdateDelivery[warehouseId-1][districtId-1] = orderId + 1
+			if orderId+1 > districts[warehouseId-1][districtId-1].NextDeliveryOrderId {
+				districts[warehouseId-1][districtId-1].NextDeliveryOrderId = orderId + 1
 			}
 		}
 		//orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = deliveryTime
@@ -399,34 +395,16 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 		orders[warehouseId-1][districtId-1][orderId-1].OrderLines = append(orders[warehouseId-1][districtId-1][orderId-1].OrderLines, orderLine)
 	}
 
-	for w, subDistricts := range districtUpdateDelivery {
-		b := session.NewBatch(gocql.UnloggedBatch)
-		for d, nextDeliverOrderId := range subDistricts {
-			b.Entries = append(b.Entries, gocql.BatchEntry{
-				Stmt:       "UPDATE cs5424_groupi.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ?",
-				Args:       []interface{}{nextDeliverOrderId, w + 1, d + 1},
-				Idempotent: true,
-			})
-		}
-		err = session.ExecuteBatch(b)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	return orders
 }
 
-func CQLLoadOrder() {
-
-	customers, _ := parseCustomerAndCounter()
-
+func parseOrderAndUpdateCustomer(customers [][][]cassandra.Customer) [][][]cassandra.Order {
 	var err error
 
 	file, err := os.Open("data/data_files/order.csv")
 	if err != nil {
 		panic(err)
 	}
+	defer file.Close()
 
 	reader := csv.NewReader(file)
 	// 设置返回记录中每行数据期望的字段数，-1 表示返回所有字段
@@ -478,77 +456,46 @@ func CQLLoadOrder() {
 
 		orders[warehouseId-1][districtId-1] = append(orders[warehouseId-1][districtId-1], order)
 	}
-	file.Close()
-	orders = cqlLoadOrderLine(orders)
-
-	//for w, order2Layer := range orders {
-	//	for d, order3Layer := range order2Layer {
-	//		var b = session.NewBatch(gocql.UnloggedBatch)
-	//		for o, order := range order3Layer {
-	//			if o != 0 && o%1000 == 0 {
-	//				err = session.ExecuteBatch(b)
-	//				if err != nil {
-	//					fmt.Printf("mid batch failed: warehouse id: %v, district_id: %v, order id:%v, err: %v\n", w, d, o, err)
-	//					return
-	//				}
-	//				b = session.NewBatch(gocql.UnloggedBatch)
-	//				fmt.Printf("current state: %v, %v, %v\n", w, d, o)
-	//			}
-	//			orderJson, err := json.Marshal(order)
-	//			if err != nil {
-	//				fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
-	//			}
-	//			b.Entries = append(b.Entries, gocql.BatchEntry{
-	//				Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
-	//				Args:       []interface{}{string(orderJson)},
-	//				Idempotent: true,
-	//			})
-	//		}
-	//		err = session.ExecuteBatch(b)
-	//		if err != nil {
-	//			fmt.Printf("the last batch failed: %v\n", err)
-	//			return
-	//		}
-	//		fmt.Printf("current state: %v, %v\n", w, d)
-	//
-	//	}
-	//}
-	//
-	////fmt.Println("update customer last order")
-	//
-	//for w, customer2Layer := range customers {
-	//	for d, customer3Layer := range customer2Layer {
-	//		var b = session.NewBatch(gocql.UnloggedBatch)
-	//		for c, customer := range customer3Layer {
-	//			if c != 0 && c%1000 == 0 {
-	//				err = session.ExecuteBatch(b)
-	//				if err != nil {
-	//					fmt.Println(err)
-	//					return
-	//				}
-	//				b = session.NewBatch(gocql.UnloggedBatch)
-	//				fmt.Printf("update customer current state: %v, %v, %v\n", w, d, c)
-	//			}
-	//			b.Entries = append(b.Entries, gocql.BatchEntry{
-	//				Stmt:       "UPDATE cs5424_groupi.customers SET last_order_id = ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
-	//				Args:       []interface{}{customer.LastOrderId, customer.WarehouseId, customer.DistrictId, customer.CustomerId},
-	//				Idempotent: true,
-	//			})
-	//
-	//		}
-	//		err = session.ExecuteBatch(b)
-	//		fmt.Printf("update customer current state: %v, %v\n", w, d)
-	//		if err != nil {
-	//			fmt.Println(err)
-	//			return
-	//		}
-	//
-	//	}
-	//}
-
+	return orders
 }
 
-func CQLLoadStock() {
+func loadOrder(orders [][][]cassandra.Order) {
+	var err error
+	for w, order2Layer := range orders {
+		for d, order3Layer := range order2Layer {
+			var b = session.NewBatch(gocql.UnloggedBatch)
+			for o, order := range order3Layer {
+				if o != 0 && o%1000 == 0 {
+					err = session.ExecuteBatch(b)
+					if err != nil {
+						fmt.Printf("mid batch failed: warehouse id: %v, district_id: %v, order id:%v, err: %v\n", w, d, o, err)
+						return
+					}
+					b = session.NewBatch(gocql.UnloggedBatch)
+					fmt.Printf("current state: %v, %v, %v\n", w, d, o)
+				}
+				orderJson, err := json.Marshal(order)
+				if err != nil {
+					fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
+				}
+				b.Entries = append(b.Entries, gocql.BatchEntry{
+					Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
+					Args:       []interface{}{string(orderJson)},
+					Idempotent: true,
+				})
+			}
+			err = session.ExecuteBatch(b)
+			if err != nil {
+				fmt.Printf("the last batch failed: %v\n", err)
+				return
+			}
+			fmt.Printf("current state: %v, %v\n", w, d)
+
+		}
+	}
+}
+
+func parseAndLoadStock() {
 	file, err := os.Open("data/data_files/stock.csv")
 	if err != nil {
 		panic(err)
@@ -649,5 +596,4 @@ func CQLLoadStock() {
 			return
 		}
 	}
-
 }
