@@ -2,7 +2,6 @@ package main
 
 import (
 	"cs5424project/store/cassandra"
-	"fmt"
 )
 
 func main() {
@@ -21,6 +20,7 @@ func main() {
 	//wg.Wait()
 	//fmt.Println("main exit")
 	defer cassandra.CloseSession()
+	
 	//cassandra.QueryTest()
 
 	//var w []int
@@ -35,17 +35,17 @@ func main() {
 	//cassandra2.OrderStatusTransaction(1, 1, 1)
 	//data.CQLLoadOrder()
 
-	session := cassandra.GetSession()
-	var num int
-	applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, 3001, 1, 1, 3002).
-		ScanCAS(nil, &num)
-	fmt.Println(applied)
-	fmt.Println(num)
-	if !applied {
-		fmt.Println(err)
-	}
-	if err != nil {
-		fmt.Println(err)
-	}
+	//session := cassandra.GetSession()
+	//var num int
+	//applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, 3001, 1, 1, 3002).
+	//	ScanCAS(nil, &num)
+	//fmt.Println(applied)
+	//fmt.Println(num)
+	//if !applied {
+	//	fmt.Println(err)
+	//}
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
 
 }

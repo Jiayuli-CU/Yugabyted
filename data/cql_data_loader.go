@@ -346,6 +346,12 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 
 	var deliveryTime time.Time
 
+	var districtUpdateDelivery [][]int
+	districtUpdateDelivery = make([][]int, 10)
+	for i := 0; i < 10; i++ {
+		districtUpdateDelivery[i] = make([]int, 10)
+	}
+
 	for _, ol := range record {
 
 		warehouseId, _ := strconv.Atoi(ol[0])
@@ -371,10 +377,28 @@ func cqlLoadOrderLine(orders [][][]cassandra.Order) [][][]cassandra.Order {
 		}
 		if ol[5] != "null" {
 			orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = &deliveryTime
+			if orderId+1 > districtUpdateDelivery[warehouseId-1][districtId-1] {
+				districtUpdateDelivery[warehouseId-1][districtId-1] = orderId + 1
+			}
 		}
 		//orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = deliveryTime
 		orders[warehouseId-1][districtId-1][orderId-1].TotalAmount += int(totalPrice * 100)
 		orders[warehouseId-1][districtId-1][orderId-1].OrderLines = append(orders[warehouseId-1][districtId-1][orderId-1].OrderLines, orderLine)
+	}
+
+	for w, subDistricts := range districtUpdateDelivery {
+		b := session.NewBatch(gocql.UnloggedBatch)
+		for d, nextDeliverOrderId := range subDistricts {
+			b.Entries = append(b.Entries, gocql.BatchEntry{
+				Stmt:       "UPDATE cs5424_groupi.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ?",
+				Args:       []interface{}{nextDeliverOrderId, w + 1, d + 1},
+				Idempotent: true,
+			})
+		}
+		err = session.ExecuteBatch(b)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	return orders
@@ -444,70 +468,70 @@ func CQLLoadOrder() {
 	file.Close()
 	orders = cqlLoadOrderLine(orders)
 
-	for w, order2Layer := range orders {
-		for d, order3Layer := range order2Layer {
-			var b = session.NewBatch(gocql.UnloggedBatch)
-			for o, order := range order3Layer {
-				if o != 0 && o%1000 == 0 {
-					err = session.ExecuteBatch(b)
-					if err != nil {
-						fmt.Printf("mid batch failed: warehouse id: %v, district_id: %v, order id:%v, err: %v\n", w, d, o, err)
-						return
-					}
-					b = session.NewBatch(gocql.UnloggedBatch)
-					fmt.Printf("current state: %v, %v, %v\n", w, d, o)
-				}
-				orderJson, err := json.Marshal(order)
-				if err != nil {
-					fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
-				}
-				b.Entries = append(b.Entries, gocql.BatchEntry{
-					Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
-					Args:       []interface{}{string(orderJson)},
-					Idempotent: true,
-				})
-			}
-			err = session.ExecuteBatch(b)
-			if err != nil {
-				fmt.Printf("the last batch failed: %v\n", err)
-				return
-			}
-			fmt.Printf("current state: %v, %v\n", w, d)
-
-		}
-	}
-
-	//fmt.Println("update customer last order")
-
-	for w, customer2Layer := range customers {
-		for d, customer3Layer := range customer2Layer {
-			var b = session.NewBatch(gocql.UnloggedBatch)
-			for c, customer := range customer3Layer {
-				if c != 0 && c%1000 == 0 {
-					err = session.ExecuteBatch(b)
-					if err != nil {
-						fmt.Println(err)
-						return
-					}
-					b = session.NewBatch(gocql.UnloggedBatch)
-					fmt.Printf("update customer current state: %v, %v, %v\n", w, d, c)
-				}
-				b.Entries = append(b.Entries, gocql.BatchEntry{
-					Stmt:       "UPDATE cs5424_groupi.customers SET last_order_id = ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
-					Args:       []interface{}{customer.LastOrderId, customer.WarehouseId, customer.DistrictId, customer.CustomerId},
-					Idempotent: true,
-				})
-
-			}
-			err = session.ExecuteBatch(b)
-			fmt.Printf("update customer current state: %v, %v\n", w, d)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-		}
-	}
+	//for w, order2Layer := range orders {
+	//	for d, order3Layer := range order2Layer {
+	//		var b = session.NewBatch(gocql.UnloggedBatch)
+	//		for o, order := range order3Layer {
+	//			if o != 0 && o%1000 == 0 {
+	//				err = session.ExecuteBatch(b)
+	//				if err != nil {
+	//					fmt.Printf("mid batch failed: warehouse id: %v, district_id: %v, order id:%v, err: %v\n", w, d, o, err)
+	//					return
+	//				}
+	//				b = session.NewBatch(gocql.UnloggedBatch)
+	//				fmt.Printf("current state: %v, %v, %v\n", w, d, o)
+	//			}
+	//			orderJson, err := json.Marshal(order)
+	//			if err != nil {
+	//				fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
+	//			}
+	//			b.Entries = append(b.Entries, gocql.BatchEntry{
+	//				Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
+	//				Args:       []interface{}{string(orderJson)},
+	//				Idempotent: true,
+	//			})
+	//		}
+	//		err = session.ExecuteBatch(b)
+	//		if err != nil {
+	//			fmt.Printf("the last batch failed: %v\n", err)
+	//			return
+	//		}
+	//		fmt.Printf("current state: %v, %v\n", w, d)
+	//
+	//	}
+	//}
+	//
+	////fmt.Println("update customer last order")
+	//
+	//for w, customer2Layer := range customers {
+	//	for d, customer3Layer := range customer2Layer {
+	//		var b = session.NewBatch(gocql.UnloggedBatch)
+	//		for c, customer := range customer3Layer {
+	//			if c != 0 && c%1000 == 0 {
+	//				err = session.ExecuteBatch(b)
+	//				if err != nil {
+	//					fmt.Println(err)
+	//					return
+	//				}
+	//				b = session.NewBatch(gocql.UnloggedBatch)
+	//				fmt.Printf("update customer current state: %v, %v, %v\n", w, d, c)
+	//			}
+	//			b.Entries = append(b.Entries, gocql.BatchEntry{
+	//				Stmt:       "UPDATE cs5424_groupi.customers SET last_order_id = ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+	//				Args:       []interface{}{customer.LastOrderId, customer.WarehouseId, customer.DistrictId, customer.CustomerId},
+	//				Idempotent: true,
+	//			})
+	//
+	//		}
+	//		err = session.ExecuteBatch(b)
+	//		fmt.Printf("update customer current state: %v, %v\n", w, d)
+	//		if err != nil {
+	//			fmt.Println(err)
+	//			return
+	//		}
+	//
+	//	}
+	//}
 
 }
 
