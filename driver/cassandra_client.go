@@ -165,7 +165,7 @@ func relatedCustomerParser(ctx context.Context, info []string) {
 	warehouseId, _ := strconv.Atoi(info[1])
 	districtId, _ := strconv.Atoi(info[2])
 	customerId, _ := strconv.Atoi(info[3])
-	err := cassandra.RelatedCustomerTransaction(ctx, customerId, warehouseId, districtId)
+	err := cassandra.RelatedCustomerTransaction(ctx, warehouseId, districtId, customerId)
 	if err != nil {
 		fmt.Printf("Related-Customer Transaction failed: %s\n", err.Error())
 	}

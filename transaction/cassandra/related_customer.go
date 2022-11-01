@@ -13,7 +13,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 	var orderInfosByCustomer []OrderInfo
 	// find orders of this customer
 	GetOrdersByCustomerQuery := fmt.Sprintf(`SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders 
-                                                        WHERE warehouse_id = %v AND district_id = %v customer_id = %v`, warehouseId, districtId, customerId)
+                                                        WHERE warehouse_id = %v AND district_id = %v AND customer_id = %v`, warehouseId, districtId, customerId)
 
 	scanner := session.Query(GetOrdersByCustomerQuery).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
@@ -41,6 +41,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		orderInfosByCustomer = append(orderInfosByCustomer, orderInfo)
 	}
 
+	fmt.Printf("len of orderinfos: %v", len(orderInfosByCustomer))
 	// collect set of items
 	for _, order := range orderInfosByCustomer {
 		itemIdSet := map[int]bool{}
@@ -48,6 +49,10 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 			itemIdSet[orderLine.ItemId] = true
 		}
 		itemIdSets = append(itemIdSets, itemIdSet)
+	}
+
+	for _, itemSet := range itemIdSets {
+		fmt.Println(itemSet)
 	}
 
 	// iterate over all orders
@@ -111,6 +116,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		}
 	}
 
+	fmt.Println(len(relatedCustomers))
 	output := RelatedCustomerTransactionOutput{
 		TransactionType:            "Related Customer Transaction",
 		RelatedCustomerIdentifiers: maps.Keys(relatedCustomers),
