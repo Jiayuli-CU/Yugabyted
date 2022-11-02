@@ -207,7 +207,7 @@ func LoadStock() {
 		wareHouseId, _ := strconv.ParseUint(record[0], 10, 64)
 		itemId, _ := strconv.ParseUint(record[1], 10, 64)
 		quantity, _ := strconv.ParseInt(record[2], 10, 64)
-		yearToDateQuantityOrdered, _ := strconv.ParseInt(record[3], 10, 64)
+		yearToDateQuantityOrdered, _ := strconv.ParseFloat(record[3], 64)
 		ordersNumber, _ := strconv.ParseUint(record[4], 10, 64)
 		remoteOrdersNumber, _ := strconv.ParseUint(record[5], 10, 64)
 
@@ -215,7 +215,7 @@ func LoadStock() {
 			WarehouseId:               wareHouseId,
 			ItemId:                    itemId,
 			Quantity:                  int(quantity),
-			YearToDateQuantityOrdered: int(yearToDateQuantityOrdered),
+			YearToDateQuantityOrdered: yearToDateQuantityOrdered,
 			OrdersNumber:              ordersNumber,
 			RemoteOrdersNumber:        remoteOrdersNumber,
 			District1Info:             record[6],
