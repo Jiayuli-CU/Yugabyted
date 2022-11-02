@@ -2,8 +2,6 @@ package postgre
 
 import (
 	"cs5424project/store/models"
-	"errors"
-	"fmt"
 	"gorm.io/gorm"
 	"log"
 )
@@ -21,9 +19,9 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
-		if customer.Balance < payment {
-			return errors.New(fmt.Sprintf("Not enough balance. Current balance is %v, need to pay %v\n", customer.Balance, payment))
-		}
+		//if customer.Balance < payment {
+		//	return errors.New(fmt.Sprintf("Not enough balance. Current balance is %v, need to pay %v\n", customer.Balance, payment))
+		//}
 		customer.Balance -= payment
 		customer.YearToDatePayment += payment
 		customer.PaymentsNumber++

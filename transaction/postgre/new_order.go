@@ -10,7 +10,7 @@ import (
 
 var db = postgre.GetDB()
 
-func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
+func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []float64) error {
 
 	var warehouseTax, districtTax, discount, totalAmount float64
 	var warehouse *models.Warehouse
@@ -108,7 +108,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 
 			// update stock
 			stockQuantity := stock.Quantity
-			adjustedQuantity := stockQuantity - quantity
+			adjustedQuantity := stockQuantity - int(quantity)
 			if adjustedQuantity < 10 {
 				adjustedQuantity += 100
 			}
@@ -117,7 +117,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 			if wId != warehouseId {
 				stock.RemoteOrdersNumber += 1
 			}
-			stock.YearToDateQuantityOrdered += quantity
+			stock.YearToDateQuantityOrdered += float64(quantity)
 			// 此处更新有无更好办法？
 			err = tx.Model(stock).Updates(stock).Error
 			if err != nil {
@@ -137,7 +137,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 				Id:                uint64(idx + 1),
 				ItemId:            itemNumber,
 				SupplyNumber:      wId,
-				Quantity:          quantity,
+				Quantity:          int(quantity),
 				Price:             itemAmount,
 				MiscellaneousData: fmt.Sprintf("S_DIST_%d", districtId),
 			}
@@ -255,7 +255,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 			if wId != warehouseId {
 				stock.RemoteOrdersNumber += 1
 			}
-			stock.YearToDateQuantityOrdered += quantity
+			stock.YearToDateQuantityOrdered += float64(quantity)
 			// 此处更新有无更好办法？
 			err = tx.Model(stock).Updates(stock).Error
 			if err != nil {

@@ -83,14 +83,14 @@ func newOrderParser(info []string, buff *bufio.Reader) {
 	total, _ := strconv.Atoi(strings.Replace(info[4], "\r", "", -1))
 	itemNumbers := make([]uint64, total)
 	supplierWarehouses := make([]uint64, total)
-	quantities := make([]int, total)
+	quantities := make([]float64, total)
 
 	for i := 0; i < total; i++ {
 		subLine, _ := buff.ReadString('\n')
 		subInfo := strings.Split(strings.Replace(subLine, "\n", "", -1), ",")
 		itemNumber, _ := strconv.ParseUint(subInfo[0], 10, 64)
 		supplyWarehouseId, _ := strconv.ParseUint(subInfo[1], 10, 64)
-		quantity, _ := strconv.Atoi(strings.Replace(subInfo[2], "\r", "", -1))
+		quantity, _ := strconv.ParseFloat(strings.Replace(subInfo[2], "\r", "", -1), 32)
 		itemNumbers[i] = itemNumber
 		supplierWarehouses[i] = supplyWarehouseId
 		quantities[i] = quantity

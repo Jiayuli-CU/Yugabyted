@@ -132,6 +132,5 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 	}
 
 	wg.Wait()
-
 	return err
 }
