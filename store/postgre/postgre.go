@@ -17,11 +17,11 @@ var (
 )
 
 const (
-	host           = "ap-southeast-1.af363d1a-c9eb-43c7-be5a-06e807e2467b.aws.ybdb.io"
+	host           = "192.168.48.246"
 	port           = "5433"
-	user           = "admin"
-	password       = "A6jDGDt2TwS3Etk3QuDo3hp89iwPvD"
-	dbname         = "yugabyte"
+	user           = "cs5424l"
+	password       = "123456"
+	dbname         = "yugabyte2"
 	shardingNumber = 5
 )
 
