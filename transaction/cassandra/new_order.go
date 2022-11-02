@@ -132,7 +132,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 
 	entryTime := time.Now()
 
-	if err = session.Query(`INSERT INTO cs5424_groupI.orders (warehouse_id, district_id, order_id, customer_id, first_name, middle_name, last_name, items_number, all_local, entry_time, order_lines, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	if err = session.Query(`INSERT INTO cs5424_groupI.orders (warehouse_id, district_id, order_id, customer_id, first_name, middle_name, last_name, items_number, all_local, entry_time, order_lines, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		warehouseId, districtId, orderId, customerId, customerBasicInfo.FirstName, customerBasicInfo.MiddleName, customerBasicInfo.LastName, total, local, entryTime, orderLines, totalAmountInt).
 		WithContext(ctx).Exec(); err != nil {
 		log.Fatal(err)
