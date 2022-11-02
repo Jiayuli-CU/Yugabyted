@@ -11,14 +11,14 @@ import (
 func Top10Balance() error {
 
 	var customers []models.Customer
-	var balances []int
+	var balances []float64
 	err := db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Limit(10).Order("balance desc").Find(&customers).Error; err != nil {
 			return err
 		}
 		for _, customer := range customers {
 			curr_balance := customer.Balance
-			balances = append(balances, int(curr_balance))
+			balances = append(balances, curr_balance)
 		}
 		return nil
 	})
