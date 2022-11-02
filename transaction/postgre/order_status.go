@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"fmt"
 	"gorm.io/gorm"
 	"log"
 )
@@ -31,19 +32,19 @@ func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
 		log.Printf("Order status transaction error: %v\n", err)
 		return nil
 	}
-	log.Printf("Customer info: first name = %v, middle name = %v, last name = %v, balance = %v\n",
+	fmt.Printf("Customer info: first name = %v, middle name = %v, last name = %v, balance = %v\n",
 		customer.FirstName,
 		customer.MiddleName,
 		customer.LastName,
 		customer.Balance,
 	)
-	log.Printf("Customer last order info: order id = %v, entry time = %v, carrier id = %v",
+	fmt.Printf("Customer last order info: order id = %v, entry time = %v, carrier id = %v",
 		order.Id,
 		order.EntryTime,
 		order.CarrierId,
 	)
 	for _, orderLine := range orderLines {
-		log.Printf("Customer order item info: item id = %v, warehouse id = %v, quantity ordered = %v, total price = %v, delivery time = %v\n",
+		fmt.Printf("Customer order item info: item id = %v, warehouse id = %v, quantity ordered = %v, total price = %v, delivery time = %v\n",
 			orderLine.ItemId,
 			orderLine.WarehouseId,
 			orderLine.Quantity,

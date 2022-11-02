@@ -44,7 +44,7 @@ func init() {
 		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
 	log.Printf("Successfully connected to postgres db\n")
-	shardingDB(db)
+	//shardingDB(db)
 	//initMigrations(db)
 }
 

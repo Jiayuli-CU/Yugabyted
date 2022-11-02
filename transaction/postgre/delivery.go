@@ -4,6 +4,7 @@ import (
 	"cs5424project/store/models"
 	"gorm.io/gorm"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -21,8 +22,11 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 	//			  items placed in order X
 	//			• Increment C_DELIVERY_CNT by 1
 	var err error
+	var wg sync.WaitGroup
 	for districtId := 1; districtId <= 10; districtId++ {
-		go func() {
+		wg.Add(1)
+		go func(districtId int) {
+			defer wg.Done()
 			err = db.Transaction(func(tx *gorm.DB) error {
 				var order models.Order
 				if err = tx.Model(&models.Order{}).Where("carrier_id = 0 AND warehouse_id = ? AND district_id = ?", warehouseId, districtId).First(&order).Error; err != nil {
@@ -65,8 +69,9 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 				log.Printf("Delivery transaction error: %v\n", err)
 				return
 			}
-		}()
+		}(districtId)
 	}
 
+	wg.Wait()
 	return err
 }
