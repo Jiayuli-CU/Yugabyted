@@ -4,6 +4,7 @@ import (
 	"cs5424project/store/models"
 	"gorm.io/gorm"
 	"log"
+	"sync"
 )
 
 func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) error {
@@ -43,8 +44,11 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) erro
 			log.Printf("Find all customers error: %v", err)
 			return err
 		}
+		var wg sync.WaitGroup
 		for _, customer := range customers {
-			go func() {
+			wg.Add(1)
+			go func(customer models.Customer) {
+				defer wg.Done()
 				customerItemSet, err := getCustomerOrderItemsTransaction(customer)
 				if err != nil {
 					return
@@ -59,9 +63,11 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) erro
 						return
 					}
 				}
-			}()
+			}(customer)
 		}
+		wg.Wait()
 	}
+
 	return err
 }
 
