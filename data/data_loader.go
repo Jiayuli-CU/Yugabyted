@@ -13,6 +13,8 @@ import (
 
 var db = postgre.GetDB()
 
+const batchSize = 1000
+
 func LoadWarehouse() {
 	file, err := os.Open("./data_files/warehouse.csv")
 	if err != nil {
@@ -90,7 +92,7 @@ func LoadDistrict() {
 		}
 	}
 
-	err = db.CreateInBatches(&districts, 100).Error
+	err = db.CreateInBatches(&districts, batchSize).Error
 }
 
 func LoadCustomer() {
@@ -147,7 +149,7 @@ func LoadCustomer() {
 		}
 	}
 
-	err = db.CreateInBatches(&customers, 100).Error
+	err = db.CreateInBatches(&customers, batchSize).Error
 }
 
 func LoadItem() {
@@ -182,7 +184,7 @@ func LoadItem() {
 		}
 	}
 
-	err = db.CreateInBatches(&items, 100).Error
+	err = db.CreateInBatches(&items, batchSize).Error
 }
 
 func LoadStock() {
@@ -232,7 +234,7 @@ func LoadStock() {
 		}
 	}
 
-	err = db.CreateInBatches(&stocks, 100).Error
+	err = db.CreateInBatches(&stocks, batchSize).Error
 }
 
 func LoadOrder() {
@@ -287,7 +289,7 @@ func LoadOrder() {
 		}
 	}
 	postgre.SetOrderCustomerMap(orderCustomerMap)
-	err = db.CreateInBatches(&orders, 100).Error
+	err = db.CreateInBatches(&orders, batchSize).Error
 }
 
 func LoadOrderLine() error {
