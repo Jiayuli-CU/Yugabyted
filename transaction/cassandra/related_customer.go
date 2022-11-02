@@ -90,8 +90,6 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 
 func checkRelatedCustomerPerWarehouse(wg *sync.WaitGroup, warehouseId int, itemIdSets []map[int]bool, relatedCustomers map[string]bool) {
 	defer wg.Done()
-
-	fmt.Printf("start: %v\n", warehouseId)
 	var allOrderInfos []OrderInfo
 	GetAllOderInfosQuery := fmt.Sprintf(`SELECT district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders WHERE warehouse_id = %v`, warehouseId)
 	scanner := session.Query(GetAllOderInfosQuery).Iter().Scanner()
