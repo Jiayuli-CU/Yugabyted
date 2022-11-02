@@ -6,6 +6,7 @@ type Warehouse struct {
 	Id                 int
 	WarehouseBasicInfo WarehouseBasicInfo
 	TaxRate            float32
+	YearToDateAmount   float32
 }
 
 type WarehouseBasicInfo struct {

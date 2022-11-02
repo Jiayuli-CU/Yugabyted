@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-func Test_CQLDistrict(t *testing.T) {
-	CQLLoadDistrict()
-}
-
 func Test_T(t *testing.T) {
 	type test struct {
 		A int       `json:"a,omitempty"`

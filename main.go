@@ -1,38 +1,18 @@
 package main
 
 import (
+	"cs5424project/data"
 	"cs5424project/driver"
 	"cs5424project/store/cassandra"
-	"fmt"
 )
 
 func main() {
 
-	//var wg sync.WaitGroup
-	//
-	//for i := 0; i < 3; i++ {
-	//	filepath := fmt.Sprintf("data/xact_files/%v.txt", i)
-	//	wg.Add(1)
-	//	go func(filepath string, clientNumber int) {
-	//		defer wg.Done()
-	//		driver.SqlClient(filepath, clientNumber)
-	//	}(filepath, i)
-	//}
-	//
-	//wg.Wait()
-	//fmt.Println("main exit")
 	defer cassandra.CloseSession()
 
 	//data.CqlDataLoader()
-	session := cassandra.GetSession()
+	//session := cassandra.GetSession()
 
-	var nextOrderNumber int
-
-	err := session.Query(`SELECT COUNT(*) FROM cs5424_groupi.districts`).Scan(&nextOrderNumber)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(nextOrderNumber)
 	//cassandra.QueryTest()
 
 	//var w []int
@@ -41,11 +21,7 @@ func main() {
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
-
-	//cassandra2.PaymentTransaction(1, 1, 1, 23.0)
-	//data.CQLLoadOrder()
-	//cassandra2.OrderStatusTransaction(1, 1, 1)
-	//data.CQLLoadOrder()
+	data.CqlDataLoader()
 
 	//TestTopBalanceTransaction()
 	//TestOrderStatustransaction()

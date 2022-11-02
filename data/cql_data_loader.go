@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gocql/gocql"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -16,18 +15,18 @@ var session = cassandra.GetSession()
 
 func CqlDataLoader() {
 	warehouses := parseAndLoadWarehouse()
-	districts, _ := parseDistrictAndCounter(warehouses)
+	//loadWarehouseCounter(warehouses)
+	districts, districtsCounter := parseDistrictAndCounter(warehouses)
 	items := parseItem()
 	//loadItem(items)
-	customers, _ := parseCustomerAndCounter()
+	customers, customerCounters := parseCustomerAndCounter()
 	orders := parseOrderAndUpdateCustomer(customers)
 	parseOrderLineAndUpdateDistrict(orders, items, districts)
 
-	fmt.Println(districts)
-	//loadDistrictAndCounter(districts, districtsCounter)
-	//loadCustomerAndCounter(customers, customerCounters)
-	//loadOrder(orders)
-	//parseAndLoadStock()
+	loadDistrictAndCounter(districts, districtsCounter)
+	loadCustomerAndCounter(customers, customerCounters)
+	loadOrder(orders)
+	parseAndLoadStock()
 }
 
 func parseAndLoadWarehouse() []cassandra.Warehouse {
@@ -63,22 +62,22 @@ func parseAndLoadWarehouse() []cassandra.Warehouse {
 			Id:                 id,
 			WarehouseBasicInfo: warehouseBasicInfo,
 			TaxRate:            float32(taxRate),
-		}
-
-		err = loadWarehouseCounter(id, yearToDateAmount)
-		if err != nil {
-			log.Printf("fail to insert warehouse counter, error: %v\n", err)
-			return nil
+			YearToDateAmount:   float32(yearToDateAmount),
 		}
 	}
 
 	return warehouses
 }
 
-func loadWarehouseCounter(warehouseId int, yearToDateAmount float64) error {
-	//err := session.Query(`UPDATE cs5424_groupi.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(yearToDateAmount*100), warehouseId).Exec()
-	//return err
-	return nil
+func loadWarehouseCounter(warehouses []cassandra.Warehouse) {
+	var err error
+	for _, warehouse := range warehouses {
+		fmt.Println(warehouse.Id)
+		err = session.Query(`UPDATE cs5424_groupI.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(warehouse.YearToDateAmount*100), warehouse.Id).Exec()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 func parseDistrictAndCounter(warehouses []cassandra.Warehouse) ([][]cassandra.District, [][]int) {

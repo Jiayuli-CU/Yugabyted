@@ -24,7 +24,8 @@ func createSchema() {
 	}
 
 	warehouseCounterQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.warehouse_counter " +
-		"(warehouse_id int PRIMARY KEY, warehouse_year_to_date_payment counter);"
+		"(warehouse_id int, warehouse_year_to_date_payment counter, " +
+		"PRIMARY KEY (warehouse_id));"
 	err = session.Query(warehouseCounterQuery).Exec()
 	if err != nil {
 		log.Println(err)
@@ -38,7 +39,7 @@ func createSchema() {
 		log.Println(err)
 	}
 
-	districtQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.districts " +
+	districtQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupi.districts " +
 		"(warehouse_id int, district_id int, next_order_number int, district_address FROZEN<district_info>, district_tax_rate float, warehouse_address FROZEN<warehouse_info> static, warehouse_tax_rate float static, next_delivery_order_id int, " +
 		"PRIMARY KEY ((warehouse_id), district_id));"
 	err = session.Query(districtQuery).Exec()
@@ -86,12 +87,12 @@ func createSchema() {
 		log.Println(err)
 	}
 
-	//customerIndex := "CREATE INDEX order_customer_index ON cs5424_groupI.orders (customer_id) WITH transactions = {'enabled': 'false', 'consistency_level': 'user_enforced'};"
-	//err = session.Query(customerIndex).Exec()
-	//if err != nil {
-	//	log.Println(err)
-	//	//return
-	//}
+	customerIndex := "CREATE INDEX order_customer_index ON cs5424_groupI.orders (customer_id) WITH transactions = {'enabled': 'false', 'consistency_level': 'user_enforced'};"
+	err = session.Query(customerIndex).Exec()
+	if err != nil {
+		log.Println(err)
+		//return
+	}
 
 	stockInfoTypeQuery := "CREATE TYPE IF NOT EXISTS cs5424_groupi.stock_info " +
 		"(district_1_info text, district_2_info text, district_3_info text,district_4_info text, district_5_info text, district_6_info text, district_7_info text, district_8_info text, district_9_info text, district_10_info text, miscellaneous_data text);"

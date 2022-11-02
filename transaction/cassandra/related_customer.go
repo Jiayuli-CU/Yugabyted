@@ -4,8 +4,8 @@ import (
 	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
+	"sync"
 )
 
 func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, customerId int) error {
@@ -41,7 +41,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		orderInfosByCustomer = append(orderInfosByCustomer, orderInfo)
 	}
 
-	fmt.Printf("len of orderinfos: %v", len(orderInfosByCustomer))
+	fmt.Printf("len of orderinfos: %v\n", len(orderInfosByCustomer))
 	// collect set of items
 	for _, order := range orderInfosByCustomer {
 		itemIdSet := map[int]bool{}
@@ -56,77 +56,89 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 	}
 
 	// iterate over all orders
+	relatedCustomerList := make([]map[string]bool, 10)
+	var wg sync.WaitGroup
+	for wId := 1; wId <= 10; wId++ {
+		if wId == warehouseId {
+			continue
+		}
+		relatedCustomerList[wId-1] = make(map[string]bool)
+		wg.Add(1)
+		go checkRelatedCustomerPerWarehouse(&wg, wId, itemIdSets, relatedCustomerList[wId-1])
+	}
+
+	wg.Wait()
+
+	var relatedCustomers []string
+	for i, m := range relatedCustomerList {
+		if i+1 == warehouseId {
+			continue
+		}
+		for customer, _ := range m {
+			relatedCustomers = append(relatedCustomers, customer)
+		}
+	}
+
+	output := RelatedCustomerTransactionOutput{
+		TransactionType:            "Related Customer Transaction",
+		RelatedCustomerIdentifiers: relatedCustomers,
+	}
+
+	fmt.Printf("%+v\n", output)
+	return nil
+}
+
+func checkRelatedCustomerPerWarehouse(wg *sync.WaitGroup, warehouseId int, itemIdSets []map[int]bool, relatedCustomers map[string]bool) {
+	defer wg.Done()
+
+	fmt.Printf("start: %v\n", warehouseId)
 	var allOrderInfos []OrderInfo
-	GetAllOderInfosQuery := `SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders`
-	scanner = session.Query(GetAllOderInfosQuery).Iter().Scanner()
+	GetAllOderInfosQuery := fmt.Sprintf(`SELECT district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders WHERE warehouse_id = %v`, warehouseId)
+	scanner := session.Query(GetAllOderInfosQuery).Iter().Scanner()
 	for scanner.Next() {
 		var (
-			_warehouseId int
-			_district_id int
-			_order_id    int
-			_customer_id int
-			_orderLines  []cassandra.OrderLine
+			districtId int
+			orderId    int
+			customerId int
+			orderLines []cassandra.OrderLine
 		)
 
-		scanner.Scan(&_warehouseId, &_district_id, &_order_id, &_customer_id, &_orderLines)
+		scanner.Scan(&districtId, &orderId, &customerId, &orderLines)
 
 		orderInfo := OrderInfo{
-			WarehouseId: _warehouseId,
-			DistrictId:  _district_id,
-			OrderId:     _order_id,
-			CustomerId:  _customer_id,
-			OrderLines:  _orderLines,
+			WarehouseId: warehouseId,
+			DistrictId:  districtId,
+			OrderId:     orderId,
+			CustomerId:  customerId,
+			OrderLines:  orderLines,
 		}
 
 		allOrderInfos = append(allOrderInfos, orderInfo)
 	}
 
-	//var relatedCustomers map[CustomerIdentifier]bool
-	relatedCustomers := make(map[CustomerIdentifier]bool)
-
 	for _, orderInfo := range allOrderInfos {
-		// check if it is in the same warehouse
-		if orderInfo.WarehouseId == warehouseId {
-			continue
-		}
 
-		customerIdentifier := CustomerIdentifier{
-			WarehouseId: orderInfo.WarehouseId,
-			DistrictId:  orderInfo.DistrictId,
-			CustomerId:  orderInfo.CustomerId,
-		}
-
-		key := fmt.Sprintf("%d:%d;%d", orderInfo.WarehouseId, orderInfo.DistrictId, orderInfo.CustomerId)
+		customerPrimaryKey := fmt.Sprintf("%d:%d:%d", orderInfo.WarehouseId, orderInfo.DistrictId, orderInfo.CustomerId)
 
 		// check if this customer is already a related customer
-		if relatedCustomers[customerIdentifier] == true {
+		if relatedCustomers[customerPrimaryKey] {
 			continue
 		}
 
 		for _, itemIdSet := range itemIdSets {
-			if relatedCustomers[customerIdentifier] == true {
+			if relatedCustomers[customerPrimaryKey] {
 				break
 			}
-
 			count := 0
 			for _, orderLine := range orderInfo.OrderLines {
-				if itemIdSet[orderLine.ItemId] == true {
+				if itemIdSet[orderLine.ItemId] {
 					count++
 					if count >= 2 {
-						relatedCustomers[customerIdentifier] = true
+						relatedCustomers[customerPrimaryKey] = true
 						break
 					}
 				}
 			}
 		}
 	}
-
-	output := RelatedCustomerTransactionOutput{
-		TransactionType:            "Related Customer Transaction",
-		RelatedCustomerIdentifiers: maps.Keys(relatedCustomers),
-	}
-
-	fmt.Printf("%+v\n", output)
-	println()
-	return nil
 }
