@@ -17,11 +17,11 @@ var (
 )
 
 const (
-	host           = "ap-southeast-1.af363d1a-c9eb-43c7-be5a-06e807e2467b.aws.ybdb.io"
+	host           = "192.168.48.246"
 	port           = "5433"
-	user           = "admin"
-	password       = "A6jDGDt2TwS3Etk3QuDo3hp89iwPvD"
-	dbname         = "yugabyte"
+	user           = "cs5424l"
+	password       = "123456"
+	dbname         = "yugabyte2"
 	shardingNumber = 5
 )
 
@@ -44,40 +44,40 @@ func init() {
 		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
 	log.Printf("Successfully connected to postgres db\n")
-	shardingDB(db)
-	//initMigrations(db)
+	//shardingDB(db)
+	initMigrations(db)
 }
 
 func initMigrations(db *gorm.DB) {
 	var err error
-	//err = db.AutoMigrate(&models.Warehouse{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate warehouse to postgres db: %v\n", err)
-	//}
-	//err = db.AutoMigrate(&models.District{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate district to postgres db: %v\n", err)
-	//}
-	//err = db.AutoMigrate(&models.Customer{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate customer to postgres db: %v\n", err)
-	//}
-	//err = db.AutoMigrate(&models.Order{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate order to postgres db: %v\n", err)
-	//}
-	//err = db.AutoMigrate(&models.Item{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate item to postgres db: %v\n", err)
-	//}
+	err = db.AutoMigrate(&models.Warehouse{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate warehouse to postgres db: %v\n", err)
+	}
+	err = db.AutoMigrate(&models.District{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate district to postgres db: %v\n", err)
+	}
+	err = db.AutoMigrate(&models.Customer{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate customer to postgres db: %v\n", err)
+	}
+	err = db.AutoMigrate(&models.Order{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate order to postgres db: %v\n", err)
+	}
+	err = db.AutoMigrate(&models.Item{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate item to postgres db: %v\n", err)
+	}
 	err = db.AutoMigrate(&models.OrderLine{})
 	if err != nil {
 		log.Fatalf("Fail to auto-migrate orderline to postgres db: %v\n", err)
 	}
-	//err = db.AutoMigrate(&models.Stock{})
-	//if err != nil {
-	//	log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
-	//}
+	err = db.AutoMigrate(&models.Stock{})
+	if err != nil {
+		log.Fatalf("Fail to auto-migrate stock to postgres db: %v\n", err)
+	}
 	log.Printf("Successfully auto-migrated all models to postgres db\n")
 }
 
