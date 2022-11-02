@@ -10,7 +10,7 @@ import (
 
 var db = postgre.GetDB()
 
-func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
+func NewOrderTransaction(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
 
 	var warehouseTax, districtTax, discount, totalAmount float64
 	var warehouse *models.Warehouse
@@ -117,7 +117,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 			if wId != warehouseId {
 				stock.RemoteOrdersNumber += 1
 			}
-			stock.YearToDateQuantityOrdered += quantity
+			stock.YearToDateQuantityOrdered += float64(quantity)
 			// 此处更新有无更好办法？
 			err = tx.Model(stock).Updates(stock).Error
 			if err != nil {
@@ -163,7 +163,7 @@ func NewOrder(warehouseId, districtId, customerId, total uint64, itemNumbers, su
 	return err
 }
 
-func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
+func NewOrderTransactionV1(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
 
 	var warehouseTax, districtTax, discount, totalAmount float64
 	var warehouse *models.Warehouse
@@ -255,7 +255,7 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 			if wId != warehouseId {
 				stock.RemoteOrdersNumber += 1
 			}
-			stock.YearToDateQuantityOrdered += quantity
+			stock.YearToDateQuantityOrdered += float64(quantity)
 			// 此处更新有无更好办法？
 			err = tx.Model(stock).Updates(stock).Error
 			if err != nil {
@@ -297,4 +297,8 @@ func NewOrderV2(warehouseId, districtId, customerId, total uint64, itemNumbers, 
 	fmt.Printf("	customer identifier: W_ID: %d, D_ID: %d, C_ID: %d\n", customer.WarehouseId, customer.DistrictId, customer.Id)
 
 	return err
+}
+
+func exportNewOrderTransactionResult() {
+
 }

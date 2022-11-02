@@ -3,8 +3,11 @@ package driver
 import (
 	"bufio"
 	"cs5424project/transaction/postgre"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -22,13 +25,14 @@ func SqlClient(filepath string, clientNumber int) {
 	executedTransactions := 0
 	var latencies []time.Duration
 	start := time.Now()
+	var info []string
 	for {
 		line, err := buff.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
 		executedTransactions += 1
-		info := strings.Split(strings.Replace(line, "\n", "", -1), ",")
+		info = strings.Split(strings.Replace(line, "\n", "", -1), ",")
 		startTransaction := time.Now()
 		switch info[0] {
 		case "N":
@@ -66,14 +70,68 @@ func SqlClient(filepath string, clientNumber int) {
 		latency95Percent := latencies[int(float32(executedTransactions)*0.95)].Milliseconds()
 		latency99Percent := latencies[int(float32(executedTransactions)*0.99)].Milliseconds()
 
-		fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
-		fmt.Printf("client %v, total excution time: %v s\n", clientNumber, executionSeconds)
-		fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, float32(executedTransactions)/float32(executionSeconds))
-		fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
-		fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
-		fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
-		fmt.Printf("client %v, 99th percentile transaction latency: %v ms\n", clientNumber, latency99Percent)
+		err := exportTransactionDetails(
+			info[0], clientNumber, executedTransactions, executionSeconds,
+			latencyAverage, latencyMedian, latency95Percent, latency99Percent,
+		)
+		if err != nil {
+			fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
+			fmt.Printf("client %v, total excution time: %v s\n", clientNumber, executionSeconds)
+			fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, float32(executedTransactions)/float32(executionSeconds))
+			fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
+			fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
+			fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
+			fmt.Printf("client %v, 99th percentile transaction latency: %v ms\n", clientNumber, latency99Percent)
+		}
 	}
+}
+
+func exportTransactionDetails(
+	transactionMark string, clientNumber, executedTransactions int, executionSeconds float64,
+	latencyAverage, latencyMedian, latency95Percent, latency99Percent int64,
+) error {
+	markerNameMap := map[string]string{
+		"N": "new_order", "P": "payment", "D": "delivery", "O": "order_status",
+		"S": "stock_level", "I": "popular_item", "T": "top_balance", "R": "related_customer",
+	}
+	filePath := fmt.Sprintf("../output/postgres/%v_%v.json", markerNameMap[transactionMark], clientNumber)
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		log.Printf("Create csv file error: %v\n", err)
+		return nil
+	}
+	defer outFile.Close()
+
+	data := struct {
+		ExecutedNumber   int
+		ExecutionTime    float64
+		Throughput       float32
+		LatencyAverage   int64
+		LatencyMedian    int64
+		Latency95Percent int64
+		Latency99Percent int64
+	}{
+		ExecutedNumber:   executedTransactions,
+		ExecutionTime:    executionSeconds,
+		Throughput:       float32(executedTransactions) / float32(executionSeconds),
+		LatencyAverage:   latencyAverage,
+		LatencyMedian:    latencyMedian,
+		Latency95Percent: latency95Percent,
+		Latency99Percent: latency99Percent,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Marshal data to json error: %v\n", err)
+		return err
+	}
+	err = ioutil.WriteFile(filePath, jsonData, 0644)
+	if err != nil {
+		log.Printf("Write to json file error: %v\n", err)
+		return err
+	}
+
+	return nil
 }
 
 func newOrderParser(info []string, buff *bufio.Reader) {
@@ -96,7 +154,7 @@ func newOrderParser(info []string, buff *bufio.Reader) {
 		quantities[i] = quantity
 	}
 
-	err := postgre.NewOrder(warehouseId, districtId, customerId, uint64(total), itemNumbers, supplierWarehouses, quantities)
+	err := postgre.NewOrderTransaction(warehouseId, districtId, customerId, uint64(total), itemNumbers, supplierWarehouses, quantities)
 	if err != nil {
 		fmt.Printf("New Order Transaction failed: %s\n", err.Error())
 	}

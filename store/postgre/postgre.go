@@ -45,7 +45,7 @@ func init() {
 	}
 	log.Printf("Successfully connected to postgres db\n")
 	//shardingDB(db)
-	initMigrations(db)
+	//initMigrations(db)
 }
 
 func initMigrations(db *gorm.DB) {

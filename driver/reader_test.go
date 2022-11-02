@@ -1,9 +1,7 @@
 package driver
 
 import (
-	"cs5424project/store/postgre"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 )
@@ -39,7 +37,7 @@ func TestOrderStatus(t *testing.T) {
 	SqlClient(filePath, 0)
 }
 
-func TestStocklevel(t *testing.T) {
+func TestStockLevel(t *testing.T) {
 	filePath := "../data/test_xact_files/test_psql_stock_level.txt"
 	SqlClient(filePath, 0)
 }
@@ -57,11 +55,4 @@ func TestTopBalance(t *testing.T) {
 func TestRelatedCustomer(t *testing.T) {
 	filePath := "../data/test_xact_files/test_psql_related_customer.txt"
 	SqlClient(filePath, 0)
-}
-
-func Test1(t *testing.T) {
-	db := postgre.GetDB()
-	var orderNumber uint64
-	db.Exec("SELECT min(id) from orders where carrier_id = 0 AND warehouse_id = ? AND district_id = ?", 1, 1).Row().Scan(&orderNumber)
-	assert.Equal(t, true, true, orderNumber)
 }

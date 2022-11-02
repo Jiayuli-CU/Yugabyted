@@ -1,0 +1,9 @@
+{
+  "ExecutedNumber": 1,
+  "ExecutionTime": 0.275919965,
+  "Throughput": 3.6242392,
+  "LatencyAverage": 275,
+  "LatencyMedian": 275,
+  "Latency95Percent": 275,
+  "Latency99Percent": 275
+}
