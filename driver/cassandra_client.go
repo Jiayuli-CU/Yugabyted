@@ -10,10 +10,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-func CqlClient(filepath string, clientNumber int) {
+func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
+	defer wg.Done()
 	file, err := os.Open(filepath)
 	defer file.Close()
 	if err != nil {
@@ -69,8 +71,8 @@ func CqlClient(filepath string, clientNumber int) {
 	latency99Percent := latencies[int(float32(executedTransactions)*0.99)].Milliseconds()
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
-	fmt.Printf("client %v, total execution time: %v\n", clientNumber, executionSeconds)
-	//fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
+	fmt.Printf("client %v, total execution time: %v s\n", clientNumber, executionSeconds)
+	fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
 	fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
 	fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
 	fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
