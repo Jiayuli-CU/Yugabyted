@@ -28,10 +28,10 @@ func init() {
 		Password: "yugabyte",
 	}
 	//cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("ap-southeast-1")
-	cluster.SslOpts = &gocql.SslOptions{
-		CaPath:                 "cassandra_root.crt",
-		EnableHostVerification: false,
-	}
+	//cluster.SslOpts = &gocql.SslOptions{
+	//	CaPath:                 "cassandra_root.crt",
+	//	EnableHostVerification: false,
+	//}
 	cluster.Timeout = time.Minute
 
 	session, err = cluster.CreateSession()
