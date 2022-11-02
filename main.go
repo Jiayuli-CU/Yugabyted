@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cs5424project/data"
 	"cs5424project/driver"
 	"cs5424project/store/cassandra"
 )
@@ -21,7 +20,7 @@ func main() {
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
-	data.CqlDataLoader()
+	//data.CqlDataLoader()
 
 	//TestTopBalanceTransaction()
 	//TestOrderStatustransaction()
@@ -30,6 +29,7 @@ func main() {
 	//TestPopularItemTransaction()
 	//TestRelatedCustomerTransaction()
 	//TestStockLevelTransacction()
+	TestAllTransactions()
 }
 
 func TestTopBalanceTransaction() {
@@ -69,5 +69,14 @@ func TestRelatedCustomerTransaction() {
 
 func TestStockLevelTransacction() {
 	filePath := "data/test_xact_files/test_stock_level.txt"
+	driver.CqlClient(filePath, 0)
+}
+
+func TestAllTransactions() {
+	var filePath string
+	//for i := 0; i < 20; i++ {
+	//	filePath = fmt.Sprintf("data/xact_files/%v.txt", i)
+	//}
+	filePath = "data/xact_files/0.txt"
 	driver.CqlClient(filePath, 0)
 }

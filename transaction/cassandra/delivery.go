@@ -71,7 +71,9 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 			return err
 		}
 
-		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?`, totalAmountInt, 1).
+		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? 
+                                       WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
+			totalAmountInt, 1, warehouseId, i+1, customerId).
 			WithContext(ctx).Exec(); err != nil {
 			log.Printf("Update customer counter error: %v\n", err)
 			return err
