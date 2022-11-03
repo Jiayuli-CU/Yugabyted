@@ -112,6 +112,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 			OrderLineId:       idx + 1,
 			ItemId:            itemNumber,
 			SupplyWarehouseId: wId,
+			ItemName:          itemName,
 			Quantity:          quantity,
 			AmountInt:         itemAmountInt,
 			MiscellaneousData: fmt.Sprintf("S_DIST_%d", districtId),

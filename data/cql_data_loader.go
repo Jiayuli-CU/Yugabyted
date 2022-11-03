@@ -15,10 +15,10 @@ var session = cassandra.GetSession()
 
 func CqlDataLoader() {
 	warehouses := parseAndLoadWarehouse()
-	//loadWarehouseCounter(warehouses)
+	loadWarehouseCounter(warehouses)
 	districts, districtsCounter := parseDistrictAndCounter(warehouses)
 	items := parseItem()
-	//loadItem(items)
+	loadItem(items)
 	customers, customerCounters := parseCustomerAndCounter()
 	orders := parseOrderAndUpdateCustomer(customers)
 	parseOrderLineAndUpdateDistrict(orders, items, districts)

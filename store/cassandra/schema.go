@@ -91,7 +91,6 @@ func createSchema() {
 	err = session.Query(customerIndex).Exec()
 	if err != nil {
 		log.Println(err)
-		//return
 	}
 
 	stockInfoTypeQuery := "CREATE TYPE IF NOT EXISTS cs5424_groupi.stock_info " +
