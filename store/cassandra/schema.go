@@ -117,12 +117,20 @@ func createSchema() {
 		log.Println(err)
 	}
 
+	itemOrderType := "CREATE TYPE IF NOT EXISTS cs5424_groupi.item_order " +
+		"(warehouse_id int, district_id int, order_id int, customer_id int);"
+	err = session.Query(itemOrderType).Exec()
+	if err != nil {
+		log.Println(err)
+	}
+
 	createItemsCmd := "CREATE TABLE IF NOT EXISTS cs5424_groupi.items (" +
 		" item_id int, " +
 		" item_name text, " +
 		" item_price float, " +
 		" item_image_identifier int, " +
 		" item_data text, " +
+		" item_orders set<FROZEN<item_order>>" +
 		" PRIMARY KEY (item_id) " +
 		" );"
 	err = session.Query(createItemsCmd).Exec()
