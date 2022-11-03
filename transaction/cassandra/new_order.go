@@ -109,6 +109,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		totalAmountInt += itemAmountInt
 
 		orderLine := cassandra.OrderLine{
+			ItemName:          itemName,
 			OrderLineId:       idx + 1,
 			ItemId:            itemNumber,
 			SupplyWarehouseId: wId,

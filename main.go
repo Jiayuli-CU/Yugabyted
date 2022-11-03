@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cs5424project/data"
 	"cs5424project/driver"
 	"cs5424project/store/cassandra"
 )
@@ -9,7 +10,7 @@ func main() {
 
 	defer cassandra.CloseSession()
 
-	//data.CqlDataLoader()
+	data.CqlDataLoader()
 	//session := cassandra.GetSession()
 
 	//cassandra.QueryTest()
@@ -29,7 +30,7 @@ func main() {
 	//TestPopularItemTransaction()
 	//TestRelatedCustomerTransaction()
 	//TestStockLevelTransacction()
-	TestAllTransactions()
+	//TestAllTransactions()
 }
 
 func TestTopBalanceTransaction() {
