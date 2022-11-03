@@ -49,7 +49,7 @@ func init() {
 		return
 	}
 
-	createSchema()
+	//createSchema()
 }
 
 func GetSession() *gocql.Session {

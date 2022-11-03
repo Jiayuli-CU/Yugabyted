@@ -4,28 +4,18 @@ import (
 	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"log"
 )
 
 func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockThreshold, numOrders int) error {
 	// find next available order number for (warehouseId, DistrictId)
-	var nextOrderNumber int
 	var numItemsBelowThreshold int
-
-	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
-	if err := session.Query(GetNextOrderNumberQuery).
-		WithContext(ctx).
-		Scan(&nextOrderNumber); err != nil {
-		log.Printf("Find next order number error when querying district table: %v\n", err)
-		return err
-	}
 
 	// collect the set of itemIds
 	itemIds := map[int]bool{}
 	var orderLinesList [][]cassandra.OrderLine
 	GetOrderLinesListQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupI.orders 
-                   WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
-		warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
+                   WHERE warehouse_id = %v AND district_id = %v ORDER BY order_id desc LIMIT %v`,
+		warehouseId, districtId, numOrders)
 	scanner := session.Query(GetOrderLinesListQuery).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var orderLines []cassandra.OrderLine
@@ -40,18 +30,17 @@ func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockTh
 	}
 
 	// check storage
+	var items []int
 	for itemId, _ := range itemIds {
-		// get the stock number of this item
-		var stockQuantity int
-		GetItemStockQuantityQuery := fmt.Sprintf(`SELECT quantity FROM cs5424_groupI.stock_counters WHERE warehouse_id = %v AND item_id = %v LIMIT 1`, warehouseId, itemId)
-		if err := session.Query(GetItemStockQuantityQuery).
-			WithContext(ctx).
-			Scan(&stockQuantity); err != nil {
-			log.Printf("Find item quantity error when querying stock_counter table: %v\n", err)
-			return err
-		}
+		items = append(items, itemId)
+	}
 
-		if stockQuantity < stockThreshold {
+	scanner = session.Query(`SELECT quantity FROM cs5424_groupI.stock_counters WHERE warehouse_id = ? AND item_id IN ?`, warehouseId, items).
+		WithContext(ctx).Iter().Scanner()
+	for scanner.Next() {
+		var quantity int
+		scanner.Scan(&quantity)
+		if quantity < stockThreshold {
 			numItemsBelowThreshold++
 		}
 	}

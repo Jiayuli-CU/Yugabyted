@@ -28,8 +28,8 @@ func main() {
 	//TestNewOrderTransaction()
 	//TestPopularItemTransaction()
 	//TestRelatedCustomerTransaction()
-	//TestStockLevelTransacction()
-	TestAllTransactions()
+	TestStockLevelTransacction()
+	//TestAllTransactions()
 }
 
 func TestTopBalanceTransaction() {
