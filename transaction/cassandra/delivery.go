@@ -41,7 +41,7 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 
 		//CAS
 		for {
-			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
 				WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
 			if applied && err == nil {
 				deliveryOrderIds[districtId-1] = deliveryOrderId
