@@ -105,14 +105,13 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 			return err
 		}
 		itemAmountInt := quantity * int(itemPrice*100)
-		//itemAmount, _ := decimal.NewFromInt(int64(quantities[idx])).Mul(decimal.NewFromFloat(item.Price)).Float64()
 		totalAmountInt += itemAmountInt
 
 		orderLine := cassandra.OrderLine{
+			ItemName:          itemName,
 			OrderLineId:       idx + 1,
 			ItemId:            itemNumber,
 			SupplyWarehouseId: wId,
-			ItemName:          itemName,
 			Quantity:          quantity,
 			AmountInt:         itemAmountInt,
 			MiscellaneousData: fmt.Sprintf("S_DIST_%d", districtId),
