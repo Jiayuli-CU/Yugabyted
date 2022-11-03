@@ -3,8 +3,11 @@ package cassandra
 import (
 	"context"
 	"cs5424project/store/cassandra"
+	"encoding/csv"
+	"fmt"
 	"github.com/gocql/gocql"
 	"log"
+	"os"
 	"time"
 )
 
@@ -71,6 +74,18 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 			return err
 		}
 
+		if customerId == 0 {
+			go func() {
+				key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
+				writeCSV(key, []string{
+					fmt.Sprintf("%v", warehouseId),
+					fmt.Sprintf("%v", i+1),
+					fmt.Sprintf("%v", customerId),
+					fmt.Sprintf("%v", orderId),
+				})
+			}()
+		}
+
 		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? 
                                        WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
 			totalAmountInt, 1, warehouseId, i+1, customerId).
@@ -81,4 +96,22 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 	}
 
 	return nil
+}
+
+func writeCSV(key string, output []string) {
+
+	path := fmt.Sprintf("output_test/%v", key)
+	csvFile, err := os.Create(path)
+	if err != nil {
+		log.Println("fail to open file")
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+	err = writer.Write(output)
+	if err != nil {
+		log.Println(err)
+	}
+
+	writer.Flush()
 }
