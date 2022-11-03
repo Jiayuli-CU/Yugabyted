@@ -70,7 +70,7 @@ func CqlClient(filepath string, clientNumber int) {
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
 	fmt.Printf("client %v, total execution time: %v\n", clientNumber, executionSeconds)
-	//fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
+	fmt.Printf("client %v, transaction throughput: %v per second\n", clientNumber, executedTransactions/executionSeconds)
 	fmt.Printf("client %v, Average transaction latency: %v ms\n", clientNumber, latencyAverage)
 	fmt.Printf("client %v, median transaction latency: %v ms\n", clientNumber, latencyMedian)
 	fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)

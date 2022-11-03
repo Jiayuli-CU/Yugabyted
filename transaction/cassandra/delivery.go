@@ -44,7 +44,7 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 
 		//CAS
 		for {
-			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
 				WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
 			if applied && err == nil {
 				deliveryOrderIds[districtId-1] = deliveryOrderId
@@ -75,15 +75,16 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 		}
 
 		if customerId == 0 {
-			go func() {
-				key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
-				writeCSV(key, []string{
-					fmt.Sprintf("%v", warehouseId),
-					fmt.Sprintf("%v", i+1),
-					fmt.Sprintf("%v", customerId),
-					fmt.Sprintf("%v", orderId),
-				})
-			}()
+			fmt.Println(warehouseId)
+			fmt.Println(i + 1)
+			fmt.Println(customerId)
+			fmt.Println(orderId)
+			//go func() {
+			//	key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
+			//	writeCSV(key, []string{
+			//
+			//	})
+			//}()
 		}
 
 		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? 
