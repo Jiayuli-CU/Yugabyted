@@ -55,7 +55,7 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, i+1, deliveryOrderId).
 				WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
 			if applied && err == nil {
-				deliveryOrderIds[districtId-1] = deliveryOrderId
+				deliveryOrderIds[i] = deliveryOrderId
 				break
 			}
 		}

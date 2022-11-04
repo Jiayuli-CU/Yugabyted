@@ -49,6 +49,7 @@ func init() {
 		return
 	}
 
+	dropTablesIfExists()
 	createSchema()
 }
 
@@ -58,4 +59,61 @@ func GetSession() *gocql.Session {
 
 func CloseSession() {
 	session.Close()
+}
+
+func dropTablesIfExists() {
+	dropWarehouse := `drop table cs5424_groupi.warehouse_counter IF EXISTS`
+	dropDistrict := `drop table cs5424_groupi.districts`
+	dropDistrictCounter := `drop table cs5424_groupi.district_counter IF EXISTS`
+	dropCustomers := `drop table cs5424_groupi.customers IF EXISTS`
+	dropItems := `drop table cs5424_groupi.items IF EXISTS`
+	dropOrders := `drop table cs5424_groupi.orders IF EXISTS`
+	dropStocks := `drop table cs5424_groupi.stocks IF EXISTS`
+	dropStockCounters := `drop table cs5424_groupi.stock_counters IF EXISTS`
+	dropCustomerCounters := `drop table cs5424_groupi.customer_counters IF EXISTS`
+
+	err := session.Query(dropWarehouse)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropDistrict)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropDistrictCounter)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropCustomers)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropCustomerCounters)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropItems)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropOrders)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropStocks)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.Query(dropStockCounters)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

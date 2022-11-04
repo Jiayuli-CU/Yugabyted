@@ -4,7 +4,6 @@ import (
 	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 )
 
@@ -58,7 +57,10 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		}
 	}
 
-	itemIdListByCustomer := maps.Keys(itemIdsByCustomer)
+	var itemIdListByCustomer []int
+	for itemId, _ := range itemIdsByCustomer {
+		itemIdListByCustomer = append(itemIdListByCustomer, itemId)
+	}
 
 	// collect the itemOrders for each item
 	var itemOrdersMap map[int][]cassandra.OrderCustomerPK

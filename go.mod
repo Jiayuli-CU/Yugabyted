@@ -7,7 +7,6 @@ require (
 	github.com/goccy/go-json v0.9.7
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/exp v0.0.0-20221028150844-83b7d23a625f
 )
 
 require (
@@ -17,6 +16,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
