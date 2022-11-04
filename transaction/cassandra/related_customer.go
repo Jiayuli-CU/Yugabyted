@@ -65,7 +65,8 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 
 	// collect the itemOrders for each item
 	var itemOrdersMap map[int][]cassandra.OrderCustomerPK
-	scanner = session.Query("SELECT item_id, item_orders FROM cs5424_groupI.item_orders WHERE item_id IN ?", itemIdListByCustomer).
+	itemOrdersMap = make(map[int][]cassandra.OrderCustomerPK)
+	scanner = session.Query("SELECT item_id, item_orders FROM cs5424_groupI.items WHERE item_id IN ?", itemIdListByCustomer).
 		WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var (

@@ -10,8 +10,6 @@ func main() {
 
 	defer cassandra.CloseSession()
 
-	//cassandra2.RelatedCustomerTransaction(context.Background(), 1, 1, 10)
-
 	//var arg1, arg2, arg3, arg4 string
 	//var n1, n2, n3, n4 int
 	//var err error
@@ -42,7 +40,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	TestNewOrderTransaction(wg)
+	TestAllTransactions(wg)
 	//TestRelatedCustomerTransaction(wg)
 	wg.Wait()
 
