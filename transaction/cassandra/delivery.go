@@ -79,12 +79,10 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 			fmt.Println(i + 1)
 			fmt.Println(customerId)
 			fmt.Println(orderId)
-			//go func() {
-			//	key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
-			//	writeCSV(key, []string{
-			//
-			//	})
-			//}()
+			go func() {
+				key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
+				writeCSV(key, []string{})
+			}()
 		}
 
 		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? 

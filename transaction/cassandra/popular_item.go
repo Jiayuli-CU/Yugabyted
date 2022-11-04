@@ -10,15 +10,15 @@ import (
 
 func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrders int) error {
 	// find next available order number for (warehouseId, DistrictId)
-	var nextOrderNumber int
+	//var nextOrderNumber int
 
-	GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
-	if err := session.Query(GetNextOrderNumberQuery).
-		WithContext(ctx).
-		Scan(&nextOrderNumber); err != nil {
-		log.Printf("Find next order number error when querying district table: %v\n", err)
-		return err
-	}
+	//GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
+	//if err := session.Query(GetNextOrderNumberQuery).
+	//	WithContext(ctx).
+	//	Scan(&nextOrderNumber); err != nil {
+	//	log.Printf("Find next order number error when querying district table: %v\n", err)
+	//	return err
+	//}
 
 	// collect the set of itemIds
 	itemIdSetForEachOrder := map[int]map[int]bool{}
@@ -30,8 +30,11 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
 	// get all required orders
 	var orderInfos []OrderInfoForPopularItemTransaction
 	GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders 
-                                                                             WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
-		warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
+                   WHERE warehouse_id = %v AND district_id = %v ORDER BY order_id desc LIMIT %v`,
+		warehouseId, districtId, numOrders)
+	//GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders
+	//                                                                         WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
+	//	warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
 	scanner := session.Query(GetOrdersQuery).Iter().Scanner()
 	for scanner.Next() {
 		var (
