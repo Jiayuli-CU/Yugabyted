@@ -49,8 +49,8 @@ func init() {
 		return
 	}
 
-	dropTablesIfExists()
-	createSchema()
+	//dropTablesIfExists()
+	//createSchema()
 }
 
 func GetSession() *gocql.Session {
@@ -62,15 +62,15 @@ func CloseSession() {
 }
 
 func dropTablesIfExists() {
-	dropWarehouse := `drop table cs5424_groupi.warehouse_counter IF EXISTS`
-	dropDistrict := `drop table cs5424_groupi.districts`
-	dropDistrictCounter := `drop table cs5424_groupi.district_counter IF EXISTS`
-	dropCustomers := `drop table cs5424_groupi.customers IF EXISTS`
-	dropItems := `drop table cs5424_groupi.items IF EXISTS`
-	dropOrders := `drop table cs5424_groupi.orders IF EXISTS`
-	dropStocks := `drop table cs5424_groupi.stocks IF EXISTS`
-	dropStockCounters := `drop table cs5424_groupi.stock_counters IF EXISTS`
-	dropCustomerCounters := `drop table cs5424_groupi.customer_counters IF EXISTS`
+	dropWarehouse := `drop table  IF EXISTS cs5424_groupi.warehouse_counter`
+	dropDistrict := `drop table  IF EXISTS cs5424_groupi.districts`
+	dropDistrictCounter := `drop table  IF EXISTS cs5424_groupi.district_counter`
+	dropCustomers := `drop table  IF EXISTS cs5424_groupi.customers`
+	dropItems := `drop table  IF EXISTS cs5424_groupi.items`
+	dropOrders := `drop table  IF EXISTS cs5424_groupi.orders`
+	dropStocks := `drop table  IF EXISTS cs5424_groupi.stocks`
+	dropStockCounters := `drop table  IF EXISTS cs5424_groupi.stock_counters`
+	dropCustomerCounters := `drop table  IF EXISTS cs5424_groupi.customer_counters`
 
 	err := session.Query(dropWarehouse)
 	if err != nil {

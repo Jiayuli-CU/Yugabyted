@@ -1,15 +1,16 @@
 package main
 
 import (
-	"cs5424project/data"
+	"context"
 	"cs5424project/store/cassandra"
+	cassandra2 "cs5424project/transaction/cassandra"
 )
 
 func main() {
 
 	defer cassandra.CloseSession()
 
-	data.CqlDataLoader()
+	//data.CqlDataLoader()
 
 	//var arg1, arg2, arg3, arg4 string
 	//var n1, n2, n3, n4 int
@@ -37,4 +38,5 @@ func main() {
 	//
 	//wg.Wait()
 	//cassandra2.DeliveryTransaction(context.Background(), 4, 10)
+	cassandra2.RelatedCustomerTransaction(context.Background(), 2, 5, 1000)
 }
