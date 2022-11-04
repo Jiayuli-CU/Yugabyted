@@ -146,18 +146,33 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 	totalAmount := float32(totalAmountInt) / 100 * (1 + warehouseTax + districtTax) * (1 - discount)
 
 	// update item_table, which order bought this item
-	itemOrder := cassandra.OrderCustomerPK{
-		WarehouseId: warehouseId,
-		DistrictId:  districtId,
-		OrderId:     orderId,
-		CustomerId:  customerId,
+	itemOrder := []cassandra.OrderCustomerPK{
+		{
+			WarehouseId: warehouseId,
+			DistrictId:  districtId,
+			OrderId:     orderId,
+			CustomerId:  customerId,
+		},
 	}
 
-	UpdateItemOrdersQuery := fmt.Sprintf(`UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id IN ?`, itemOrder, itemNumbers)
-	if err = session.Query(UpdateItemOrdersQuery).
-		WithContext(ctx).Exec(); err != nil {
-		log.Fatal(err)
+	b := session.NewBatch(gocql.UnloggedBatch)
+	for _, itemId := range itemNumbers {
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       `UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id = ?`,
+			Args:       []interface{}{itemOrder, itemId},
+			Idempotent: true,
+		})
 	}
+	err = session.ExecuteBatch(b)
+	if err != nil {
+		return err
+	}
+
+	//UpdateItemOrdersQuery := fmt.Sprintf(`UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id IN ?`, itemOrder, itemNumbers)
+	//if err = session.Query(UpdateItemOrdersQuery).
+	//	WithContext(ctx).Exec(); err != nil {
+	//	log.Fatal(err)
+	//}
 
 	output := NewOrderTransactionOutput{
 		TransactionType:  "New Order Transaction",
