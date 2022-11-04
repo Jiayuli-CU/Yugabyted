@@ -4,6 +4,7 @@ import (
 	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 )
 
@@ -49,6 +50,29 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		itemIdSets = append(itemIdSets, itemIdSet)
 	}
 
+	// collect items bought by this customer
+	var itemIdsByCustomer map[int]bool
+	for _, itemIdSet := range itemIdSets {
+		for itemId, _ := range itemIdSet {
+			itemIdsByCustomer[itemId] = true
+		}
+	}
+
+	itemIdListByCustomer := maps.Keys(itemIdsByCustomer)
+
+	// collect the itemOrders for each item
+	var itemOrdersMap map[int][]cassandra.OrderCustomerPK
+	scanner = session.Query("SELECT item_id, item_orders FROM cs5424_groupI.item_orders WHERE item_id IN ?", itemIdListByCustomer).
+		WithContext(ctx).Iter().Scanner()
+	for scanner.Next() {
+		var (
+			itemId     int
+			itemOrders []cassandra.OrderCustomerPK
+		)
+		scanner.Scan(&itemId, &itemOrders)
+		itemOrdersMap[itemId] = itemOrders
+	}
+
 	// iterate over each itemIdSet and collect related customers
 	relatedCustomers := map[CustomerIdentifier]bool{}
 	for _, itemIdSet := range itemIdSets {
@@ -56,14 +80,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 
 		for itemId, _ := range itemIdSet {
 			var itemOrders []cassandra.OrderCustomerPK
-
-			// get orders which bought this item
-			GetOrdersByItemIdQuery := fmt.Sprintf("SELECT orders FROM cs5424_groupI.item_orders WHERE item_id = %v", itemId)
-			if err := session.Query(GetOrdersByItemIdQuery).
-				WithContext(ctx).Scan(itemOrders); err != nil {
-				log.Printf("Find item orders error: %v\n", err)
-				return err
-			}
+			itemOrders = itemOrdersMap[itemId]
 
 			for _, itemOrder := range itemOrders {
 				if orderSet[itemOrder] == true {
