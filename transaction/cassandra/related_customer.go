@@ -51,6 +51,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 
 	// collect items bought by this customer
 	var itemIdsByCustomer map[int]bool
+	itemIdsByCustomer = make(map[int]bool)
 	for _, itemIdSet := range itemIdSets {
 		for itemId, _ := range itemIdSet {
 			itemIdsByCustomer[itemId] = true

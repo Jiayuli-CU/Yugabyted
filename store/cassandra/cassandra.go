@@ -49,8 +49,8 @@ func init() {
 		return
 	}
 
-	dropTablesIfExists()
-	createSchema()
+	//dropTablesIfExists()
+	//createSchema()
 }
 
 func GetSession() *gocql.Session {
