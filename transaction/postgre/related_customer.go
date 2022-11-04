@@ -76,7 +76,7 @@ func getCustomerOrderItemsTransaction(customer models.Customer) (map[uint64]bool
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var orders []models.Order
-		if err := tx.Model(&models.Order{}).Where("customer_id = ? AND warehouse_id = ? AND district_id = ?", customer.Id, customer.WarehouseId, customer.DistrictId).Find(&orders).Error; err != nil {
+		if err := tx.Model(&models.Order{}).Where("warehouse_id = ? AND district_id = ? AND customer_id = ?", customer.WarehouseId, customer.DistrictId, customer.Id).Find(&orders).Error; err != nil {
 			log.Printf("Find orders error: %v\n", err)
 			return err
 		}

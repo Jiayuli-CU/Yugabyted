@@ -58,11 +58,11 @@ type Customer struct {
 type Order struct {
 	Id uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:id"`
 	//Warehouse   Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
-	WarehouseId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:warehouse_id;not null"`
+	WarehouseId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:warehouse_id;not null;index:idx_order,priority:1"`
 	//District    District  `gorm:"foreignKey:DistrictId;references:id"`
-	DistrictId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:district_id;not null"`
+	DistrictId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:district_id;not null;index:idx_order,priority:2"`
 	//Customer    Customer  `gorm:"foreignKey:CustomerId;references:id"`
-	CustomerId  uint64    `gorm:"type:int;column:customer_id;not null"`
+	CustomerId  uint64    `gorm:"type:int;column:customer_id;not null;index:idx_order,priority:3"`
 	CarrierId   uint64    `gorm:"type:int;column:carrier_id;not null"`
 	ItemsNumber uint64    `gorm:"type:int;column:items_number;not null"`
 	Status      int       `gorm:"type:decimal(1,0);column:status;not null"`
@@ -80,11 +80,11 @@ type Item struct {
 type OrderLine struct {
 	Id uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:id"`
 	//Warehouse         Warehouse `gorm:"foreignKey:WarehouseId;references:id"`
-	WarehouseId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:warehouse_id;not null"`
+	WarehouseId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:warehouse_id;not null;index:idx_order_line,priority:1"`
 	//District          District  `gorm:"foreignKey:DistrictId;references:id"`
-	DistrictId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:district_id;not null"`
+	DistrictId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:district_id;not null;index:idx_order_line,priority:2"`
 	//Order             Order     `gorm:"foreignKey:OrderId;references:id"`
-	OrderId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:order_id;not null"`
+	OrderId uint64 `gorm:"primaryKey;autoIncrement:false;type:int;column:order_id;not null;index:idx_order_line,priority:3"`
 	//Item              Item      `gorm:"foreignKey:ItemId;references:id"`
 	ItemId            uint64    `gorm:"type:int;column:item_id;not null"`
 	DeliveryTime      time.Time `gorm:"type:timestamp;column:delivery_time"`

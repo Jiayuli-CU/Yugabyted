@@ -29,8 +29,7 @@ func Test_LoadItem(t *testing.T) {
 	LoadItem()
 }
 
-func Test_LoadOrderline(t *testing.T) {
+func Test_LoadOrderLine(t *testing.T) {
 	err := LoadOrderLine()
 	assert.NoError(t, err)
-
 }

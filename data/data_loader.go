@@ -217,7 +217,7 @@ func LoadStock() {
 			WarehouseId:               wareHouseId,
 			ItemId:                    itemId,
 			Quantity:                  int(quantity),
-			YearToDateQuantityOrdered: int(yearToDateQuantityOrdered),
+			YearToDateQuantityOrdered: float64(yearToDateQuantityOrdered),
 			OrdersNumber:              ordersNumber,
 			RemoteOrdersNumber:        remoteOrdersNumber,
 			District1Info:             record[6],

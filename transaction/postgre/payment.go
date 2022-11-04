@@ -2,8 +2,6 @@ package postgre
 
 import (
 	"cs5424project/store/models"
-	"errors"
-	"fmt"
 	"gorm.io/gorm"
 	"log"
 )
@@ -21,15 +19,16 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
-		if customer.Balance < payment {
-			return errors.New(fmt.Sprintf("Not enough balance. Current balance is %v, need to pay %v\n", customer.Balance, payment))
-		}
-		customer.Balance -= payment
-		customer.YearToDatePayment += payment
-		customer.PaymentsNumber++
+		//if customer.Balance < payment {
+		//	return errors.New(fmt.Sprintf("Not enough balance. Current balance is %v, need to pay %v\n", customer.Balance, payment))
+		//}
 		if err := tx.Model(&models.Customer{}).
 			Where("id = ? AND warehouse_id = ? AND district_id = ?", customerId, warehouseId, districtId).
-			Updates(&customer).Error; err != nil {
+			Updates(map[string]interface{}{
+				"balance":              customer.Balance - payment,
+				"year_to_date_payment": customer.YearToDatePayment + payment,
+				"payments_number":      customer.PaymentsNumber + 1,
+			}).Error; err != nil {
 			log.Printf("Update customer error: %v\n", err)
 			return err
 		}
@@ -42,10 +41,9 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 			log.Printf("Find warehouse error: %v\n", err)
 			return err
 		}
-		warehouse.YearToDateAmount += payment
 		if err := tx.Model(&models.Warehouse{}).
 			Where("id = ?", warehouseId).
-			Updates(&warehouse).Error; err != nil {
+			Updates(map[string]interface{}{"year_to_date_amount": warehouse.YearToDateAmount + payment}).Error; err != nil {
 			log.Printf("Update warehouse error: %v\n", err)
 			return err
 		}
@@ -58,10 +56,9 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 			log.Printf("Find district error: %v\n", err)
 			return err
 		}
-		district.YearToDateAmount += payment
 		if err := tx.Model(&models.District{}).
 			Where("id = ? AND warehouse_id = ?", districtId, warehouseId).
-			Updates(&district).Error; err != nil {
+			Updates(map[string]interface{}{"year_to_date_amount": district.YearToDateAmount + payment}).Error; err != nil {
 			log.Printf("Update district error: %v\n", err)
 			return err
 		}

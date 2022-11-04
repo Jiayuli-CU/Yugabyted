@@ -35,7 +35,7 @@ func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
 
 		for i := startOrderId; i < int(nextOrderId); i++ {
 			orderLine := &models.OrderLine{}
-			if err = tx.Where("warehouse_id = ? AND district_id = ? AND order_id = ?", warehouseId, districtId, i).
+			if err = tx.Where("order_id = ? AND warehouse_id = ? AND district_id = ?", i, warehouseId, districtId).
 				Order("quantity desc").Limit(1).Find(orderLine).Error; err != nil {
 				return err
 			}
@@ -74,8 +74,8 @@ func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
 			return err
 		}
 		customerFirst, customerMiddle, customerLast := customer.FirstName, customer.MiddleName, customer.LastName
-		orderinfo := fmt.Sprintf("Order number: %v, Order entryTime: %v\nCustomerFirst: %v, CustomerMiddle: %v, CustomerLast: %v\nPopularItem: %v,Quantity: %v", orderId, entryTime, customerFirst, customerMiddle, customerLast, itemName, quantities[i])
-		orderInfos = append(orderInfos, orderinfo)
+		orderInfo := fmt.Sprintf("Order number: %v, Order entryTime: %v\nCustomerFirst: %v, CustomerMiddle: %v, CustomerLast: %v\nPopularItem: %v,Quantity: %v", orderId, entryTime, customerFirst, customerMiddle, customerLast, itemName, quantities[i])
+		orderInfos = append(orderInfos, orderInfo)
 	}
 	fmt.Println("District information:")
 	fmt.Printf("District identifier: (%d, %d)\n", warehouseId, districtId)

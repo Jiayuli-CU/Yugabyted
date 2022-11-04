@@ -91,40 +91,28 @@ func shardingAlgorithm(value interface{}) (suffix string, err error) {
 func shardingDB(db *gorm.DB) {
 	db.Use(sharding.Register(sharding.Config{
 		DoubleWrite:         false,
-		ShardingKey:         "id",
+		ShardingKey:         "warehouse_id",
 		NumberOfShards:      shardingNumber,
 		ShardingAlgorithm:   shardingAlgorithm,
 		PrimaryKeyGenerator: sharding.PKSnowflake,
 	}, "customers"))
 	db.Use(sharding.Register(sharding.Config{
 		DoubleWrite:         false,
-		ShardingKey:         "customer_id",
+		ShardingKey:         "warehouse_id",
 		NumberOfShards:      shardingNumber,
 		ShardingAlgorithm:   shardingAlgorithm,
 		PrimaryKeyGenerator: sharding.PKSnowflake,
 	}, "orders"))
 	db.Use(sharding.Register(sharding.Config{
-		DoubleWrite:    false,
-		ShardingKey:    "order_id",
-		NumberOfShards: shardingNumber,
-		ShardingAlgorithm: func(value interface{}) (suffix string, err error) {
-			if uid, ok := value.(uint64); ok {
-				return fmt.Sprintf("_%02d", orderCustomerMap[uid]%shardingNumber), nil
-			}
-			return "", errors.New("invalid user_id")
-		},
-		PrimaryKeyGenerator: sharding.PKSnowflake,
-	}, "orderlines"))
-	db.Use(sharding.Register(sharding.Config{
 		DoubleWrite:         false,
-		ShardingKey:         "id",
+		ShardingKey:         "warehouse_id",
 		NumberOfShards:      shardingNumber,
 		ShardingAlgorithm:   shardingAlgorithm,
 		PrimaryKeyGenerator: sharding.PKSnowflake,
-	}, "items"))
+	}, "order_lines"))
 	db.Use(sharding.Register(sharding.Config{
 		DoubleWrite:         false,
-		ShardingKey:         "item_id",
+		ShardingKey:         "warehouse_id",
 		NumberOfShards:      shardingNumber,
 		ShardingAlgorithm:   shardingAlgorithm,
 		PrimaryKeyGenerator: sharding.PKSnowflake,

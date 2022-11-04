@@ -71,7 +71,7 @@ func SqlClient(filepath string, clientNumber int) {
 		latency99Percent := latencies[int(float32(executedTransactions)*0.99)].Milliseconds()
 
 		err := exportTransactionDetails(
-			info[0], clientNumber, executedTransactions, executionSeconds,
+			filepath, executedTransactions, executionSeconds,
 			latencyAverage, latencyMedian, latency95Percent, latency99Percent,
 		)
 		if err != nil {
@@ -87,15 +87,13 @@ func SqlClient(filepath string, clientNumber int) {
 }
 
 func exportTransactionDetails(
-	transactionMark string, clientNumber, executedTransactions int, executionSeconds float64,
+	transactionFilePath string, executedTransactions int, executionSeconds float64,
 	latencyAverage, latencyMedian, latency95Percent, latency99Percent int64,
 ) error {
-	markerNameMap := map[string]string{
-		"N": "new_order", "P": "payment", "D": "delivery", "O": "order_status",
-		"S": "stock_level", "I": "popular_item", "T": "top_balance", "R": "related_customer",
-	}
-	filePath := fmt.Sprintf("../output/postgres/%v_%v.json", markerNameMap[transactionMark], clientNumber)
-	outFile, err := os.Create(filePath)
+	path := strings.Split(transactionFilePath, "/")
+	transactionFileNumber := strings.Split(path[len(path)-1], ".")[0]
+	outputFilePath := fmt.Sprintf("../output/postgres/%v.json", transactionFileNumber)
+	outFile, err := os.Create(outputFilePath)
 	if err != nil {
 		log.Printf("Create csv file error: %v\n", err)
 		return nil
@@ -125,7 +123,7 @@ func exportTransactionDetails(
 		log.Printf("Marshal data to json error: %v\n", err)
 		return err
 	}
-	err = ioutil.WriteFile(filePath, jsonData, 0644)
+	err = ioutil.WriteFile(outputFilePath, jsonData, 0644)
 	if err != nil {
 		log.Printf("Write to json file error: %v\n", err)
 		return err
