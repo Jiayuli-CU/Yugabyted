@@ -102,63 +102,57 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 	var totalAmountInt int
 	var customerId int
 
-	var districtDeliveryOrderIdPairs [][]int
-	districtDeliveryOrderIdPairs = make([][]int, 10)
-	for i, p := range districtDeliveryOrderIdPairs {
-		p = make([]int, 2)
-		p[0] = i + 1
-		p[1] = deliveryOrderIds[i]
-	}
+	//var districtDeliveryOrderIdPairs [][]int
+	//districtDeliveryOrderIdPairs = make([][]int, 10)
+	//for i, p := range districtDeliveryOrderIdPairs {
+	//	p = make([]int, 2)
+	//	p[0] = i + 1
+	//	p[1] = deliveryOrderIds[i]
+	//}
 
-	scanner = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND (district_id,order_id) IN ?`, warehouseId, districtDeliveryOrderIdPairs).
-		WithContext(ctx).Iter().Scanner()
+	//scanner = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND (district_id,order_id) IN ?`, warehouseId, districtDeliveryOrderIdPairs).
+	//	WithContext(ctx).Iter().Scanner()
 
-	b = session.NewBatch(gocql.CounterBatch)
-	index := 0
-	for scanner.Next() {
+	//b = session.NewBatch(gocql.CounterBatch)
+	//index := 0
+	//for scanner.Next() {
+	//
+	//	scanner.Scan(&customerId, &totalAmountInt)
+	//	if customerId == 0 {
+	//		continue
+	//	}
+	//	b.Entries = append(b.Entries, gocql.BatchEntry{
+	//		Stmt:       "UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+	//		Args:       []interface{}{carrierId, time.Now(), warehouseId, index + 1, deliveryOrderIds[index]},
+	//		Idempotent: true,
+	//	})
+	//	index += 1
+	//}
+	//
+	//err = session.ExecuteBatch(b)
+	//return err
 
-		scanner.Scan(&customerId, &totalAmountInt)
+	for i, orderId := range deliveryOrderIds {
+		if err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
+			WithContext(ctx).Scan(&customerId, &totalAmountInt); err != nil {
+			log.Printf("Find order error: %v\n", err)
+			return err
+		}
+
 		if customerId == 0 {
 			continue
 		}
-		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
-			Args:       []interface{}{carrierId, time.Now(), warehouseId, index + 1, deliveryOrderIds[index]},
-			Idempotent: true,
-		})
-		index += 1
+
+		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?
+	                                  WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
+			totalAmountInt, 1, warehouseId, i+1, customerId).
+			WithContext(ctx).Exec(); err != nil {
+			log.Printf("Update customer counter error: %v\n", err)
+			return err
+		}
 	}
 
-	err = session.ExecuteBatch(b)
-	return err
-
-	//for i, orderId := range deliveryOrderIds {
-	//	if err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
-	//		WithContext(ctx).Scan(&customerId, &totalAmountInt); err != nil {
-	//		log.Printf("Find order error: %v\n", err)
-	//		return err
-	//	}
-	//
-	//	if customerId == 0 {
-	//		//fmt.Println(warehouseId)
-	//		//fmt.Println(i + 1)
-	//		//fmt.Println(customerId)
-	//		//fmt.Println(orderId)
-	//		//go func() {
-	//		//	key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
-	//		//	writeCSV(key, []string{})
-	//		//}()
-	//		continue
-	//	}
-	//
-	//	if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?
-	//                                   WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
-	//		totalAmountInt, 1, warehouseId, i+1, customerId).
-	//		WithContext(ctx).Exec(); err != nil {
-	//		log.Printf("Update customer counter error: %v\n", err)
-	//		return err
-	//	}
-	//}
+	return nil
 
 }
 
