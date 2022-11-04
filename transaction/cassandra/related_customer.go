@@ -4,8 +4,8 @@ import (
 	"context"
 	"cs5424project/store/cassandra"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
-	"sync"
 )
 
 func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, customerId int) error {
@@ -41,7 +41,6 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		orderInfosByCustomer = append(orderInfosByCustomer, orderInfo)
 	}
 
-	fmt.Printf("len of orderinfos: %v\n", len(orderInfosByCustomer))
 	// collect set of items
 	for _, order := range orderInfosByCustomer {
 		itemIdSet := map[int]bool{}
@@ -51,92 +50,69 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 		itemIdSets = append(itemIdSets, itemIdSet)
 	}
 
-	for _, itemSet := range itemIdSets {
-		fmt.Println(itemSet)
+	// collect items bought by this customer
+	var itemIdsByCustomer map[int]bool
+	for _, itemIdSet := range itemIdSets {
+		for itemId, _ := range itemIdSet {
+			itemIdsByCustomer[itemId] = true
+		}
 	}
 
-	// iterate over all orders
-	relatedCustomerList := make([]map[string]bool, 10)
-	var wg sync.WaitGroup
-	for wId := 1; wId <= 10; wId++ {
-		if wId == warehouseId {
-			continue
-		}
-		relatedCustomerList[wId-1] = make(map[string]bool)
-		wg.Add(1)
-		go checkRelatedCustomerPerWarehouse(&wg, wId, itemIdSets, relatedCustomerList[wId-1])
+	itemIdListByCustomer := maps.Keys(itemIdsByCustomer)
+
+	// collect the itemOrders for each item
+	var itemOrdersMap map[int][]cassandra.OrderCustomerPK
+	scanner = session.Query("SELECT item_id, item_orders FROM cs5424_groupI.item_orders WHERE item_id IN ?", itemIdListByCustomer).
+		WithContext(ctx).Iter().Scanner()
+	for scanner.Next() {
+		var (
+			itemId     int
+			itemOrders []cassandra.OrderCustomerPK
+		)
+		scanner.Scan(&itemId, &itemOrders)
+		itemOrdersMap[itemId] = itemOrders
 	}
 
-	wg.Wait()
+	// iterate over each itemIdSet and collect related customers
+	relatedCustomers := map[CustomerIdentifier]bool{}
+	for _, itemIdSet := range itemIdSets {
+		orderSet := map[cassandra.OrderCustomerPK]bool{}
 
-	var relatedCustomers []string
-	for i, m := range relatedCustomerList {
-		if i+1 == warehouseId {
-			continue
+		for itemId, _ := range itemIdSet {
+			var itemOrders []cassandra.OrderCustomerPK
+			itemOrders = itemOrdersMap[itemId]
+
+			for _, itemOrder := range itemOrders {
+				if orderSet[itemOrder] == true {
+					// related order
+					relatedCustomer := CustomerIdentifier{
+						WarehouseId: itemOrder.WarehouseId,
+						DistrictId:  itemOrder.DistrictId,
+						CustomerId:  itemOrder.CustomerId,
+					}
+
+					relatedCustomers[relatedCustomer] = true
+				} else {
+					orderSet[itemOrder] = true
+				}
+			}
 		}
-		for customer, _ := range m {
-			relatedCustomers = append(relatedCustomers, customer)
-		}
+	}
+
+	var relatedCustomersStr []string
+	for relatedCustomer, _ := range relatedCustomers {
+		relatedCustomersStr = append(relatedCustomersStr, customerHash(relatedCustomer.WarehouseId, relatedCustomer.DistrictId, relatedCustomer.CustomerId))
 	}
 
 	output := RelatedCustomerTransactionOutput{
 		TransactionType:            "Related Customer Transaction",
-		RelatedCustomerIdentifiers: relatedCustomers,
+		RelatedCustomerIdentifiers: relatedCustomersStr,
 	}
 
 	fmt.Printf("%+v\n", output)
 	return nil
 }
 
-func checkRelatedCustomerPerWarehouse(wg *sync.WaitGroup, warehouseId int, itemIdSets []map[int]bool, relatedCustomers map[string]bool) {
-	defer wg.Done()
-	var allOrderInfos []OrderInfo
-	GetAllOderInfosQuery := fmt.Sprintf(`SELECT district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders WHERE warehouse_id = %v`, warehouseId)
-	scanner := session.Query(GetAllOderInfosQuery).Iter().Scanner()
-	for scanner.Next() {
-		var (
-			districtId int
-			orderId    int
-			customerId int
-			orderLines []cassandra.OrderLine
-		)
-
-		scanner.Scan(&districtId, &orderId, &customerId, &orderLines)
-
-		orderInfo := OrderInfo{
-			WarehouseId: warehouseId,
-			DistrictId:  districtId,
-			OrderId:     orderId,
-			CustomerId:  customerId,
-			OrderLines:  orderLines,
-		}
-
-		allOrderInfos = append(allOrderInfos, orderInfo)
-	}
-
-	for _, orderInfo := range allOrderInfos {
-
-		customerPrimaryKey := fmt.Sprintf("%d:%d:%d", orderInfo.WarehouseId, orderInfo.DistrictId, orderInfo.CustomerId)
-
-		// check if this customer is already a related customer
-		if relatedCustomers[customerPrimaryKey] {
-			continue
-		}
-
-		for _, itemIdSet := range itemIdSets {
-			if relatedCustomers[customerPrimaryKey] {
-				break
-			}
-			count := 0
-			for _, orderLine := range orderInfo.OrderLines {
-				if itemIdSet[orderLine.ItemId] {
-					count++
-					if count >= 2 {
-						relatedCustomers[customerPrimaryKey] = true
-						break
-					}
-				}
-			}
-		}
-	}
+func customerHash(warehouseId, districtId, customerId int) string {
+	return fmt.Sprintf("%d:%d:%d", warehouseId, districtId, customerId)
 }

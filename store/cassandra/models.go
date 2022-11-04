@@ -138,3 +138,22 @@ type StockCounter struct {
 	Quantity      int `json:"quantity" cql:"quantity"`
 	TotalQuantity int `json:"total_quantity" cql:"total_quantity"`
 }
+
+//type CustomerPK struct {
+//	WarehouseId int `cql:"warehouse_id" json:"warehouse_id"`
+//	DistrictId  int `cql:"district_id" json:"district_id"`
+//	CustomerId  int `cql:"customer_id" json:"customer_id"`
+//}
+//
+//type OrderPK struct {
+//	WarehouseId int `cql:"warehouse_id" json:"warehouse_id"`
+//	DistrictId  int `cql:"district_id" json:"district_id"`
+//	OrderId     int `cql:"order_id" json:"order_id"`
+//}
+
+type OrderCustomerPK struct {
+	WarehouseId int `cql:"warehouse_id" json:"warehouse_id"`
+	DistrictId  int `cql:"district_id" json:"district_id"`
+	OrderId     int `cql:"order_id" json:"order_id"`
+	CustomerId  int `cql:"customer_id" json:"customer_id"`
+}
