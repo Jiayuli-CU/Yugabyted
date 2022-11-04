@@ -103,11 +103,12 @@ type Order struct {
 }
 
 type Item struct {
-	ItemId              int     `json:"item_id" cql:"item_id"`
-	ItemName            string  `json:"item_name" cql:"item_name"`
-	ItemPrice           float32 `json:"item_price" cql:"item_price"`
-	ItemImageIdentifier int     `json:"item_image_identifier" cql:"item_image_identifier"`
-	ItemData            string  `json:"item_data" cql:"item_data"`
+	ItemId              int               `json:"item_id" cql:"item_id"`
+	ItemName            string            `json:"item_name" cql:"item_name"`
+	ItemPrice           float32           `json:"item_price" cql:"item_price"`
+	ItemImageIdentifier int               `json:"item_image_identifier" cql:"item_image_identifier"`
+	ItemData            string            `json:"item_data" cql:"item_data"`
+	ItemOrders          []OrderCustomerPK `json:"item_orders" cql:"item_orders"`
 }
 
 type StockInfo struct {

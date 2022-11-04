@@ -18,14 +18,15 @@ func CqlDataLoader() {
 	loadWarehouseCounter(warehouses)
 	districts, districtsCounter := parseDistrictAndCounter(warehouses)
 	items := parseItem()
-	loadItem(items)
+
 	customers, customerCounters := parseCustomerAndCounter()
 	orders := parseOrderAndUpdateCustomer(customers)
-	parseOrderLineAndUpdateDistrict(orders, items, districts)
+	parseOrderLineUpdateDistrictAndItem(orders, items, districts)
 
 	loadDistrictAndCounter(districts, districtsCounter)
 	loadCustomerAndCounter(customers, customerCounters)
 	loadOrder(orders)
+	loadItem(items)
 	parseAndLoadStock()
 }
 
@@ -342,7 +343,7 @@ func loadItem(items []cassandra.Item) {
 	}
 }
 
-func parseOrderLineAndUpdateDistrict(orders [][][]cassandra.Order, items []cassandra.Item, districts [][]cassandra.District) {
+func parseOrderLineUpdateDistrictAndItem(orders [][][]cassandra.Order, items []cassandra.Item, districts [][]cassandra.District) {
 	file, err := os.Open("data/data_files/order-line.csv")
 	if err != nil {
 		panic(err)
@@ -389,6 +390,12 @@ func parseOrderLineAndUpdateDistrict(orders [][][]cassandra.Order, items []cassa
 				districts[warehouseId-1][districtId-1].NextDeliveryOrderId = orderId + 1
 			}
 		}
+		items[itemId-1].ItemOrders = append(items[itemId-1].ItemOrders, cassandra.OrderCustomerPK{
+			WarehouseId: warehouseId,
+			DistrictId:  districtId,
+			OrderId:     orderId,
+			CustomerId:  orders[warehouseId-1][districtId-1][orderId-1].CustomerId,
+		})
 		//orders[warehouseId-1][districtId-1][orderId-1].DeliveryTime = deliveryTime
 		orders[warehouseId-1][districtId-1][orderId-1].TotalAmount += int(totalPrice * 100)
 		orders[warehouseId-1][districtId-1][orderId-1].OrderLines = append(orders[warehouseId-1][districtId-1][orderId-1].OrderLines, orderLine)

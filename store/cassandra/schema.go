@@ -129,7 +129,7 @@ func createSchema() {
 		" item_price float, " +
 		" item_image_identifier int, " +
 		" item_data text, " +
-		" item_orders set<FROZEN<item_order>>" +
+		" item_orders set<FROZEN<item_order>>, " +
 		" PRIMARY KEY (item_id) " +
 		" );"
 	err = session.Query(createItemsCmd).Exec()
