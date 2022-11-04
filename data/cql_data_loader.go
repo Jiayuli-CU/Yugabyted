@@ -326,13 +326,19 @@ func loadItem(items []cassandra.Item) {
 			b = session.NewBatch(gocql.UnloggedBatch)
 			fmt.Printf("current state: %v\n", i)
 		}
-		itemJson, err := json.Marshal(item)
-		if err != nil {
-			fmt.Printf("Json parser error: %v\n", err)
-		}
+		//itemJson, err := json.Marshal(item)
+		//if err != nil {
+		//	fmt.Printf("Json parser error: %v\n", err)
+		//}
+		//fmt.Println(string(itemJson))
+		//b.Entries = append(b.Entries, gocql.BatchEntry{
+		//	Stmt:       "INSERT INTO cs5424_groupi.items JSON ?",
+		//	Args:       []interface{}{string(itemJson)},
+		//	Idempotent: true,
+		//})
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "INSERT INTO cs5424_groupi.items JSON ?",
-			Args:       []interface{}{string(itemJson)},
+			Stmt:       "INSERT INTO cs5424_groupi.items (item_id, item_name, item_price, item_image_identifier, item_data, item_orders) VALUES (?, ?, ?, ?, ?, ?)",
+			Args:       []interface{}{item.ItemId, item.ItemName, item.ItemPrice, item.ItemImageIdentifier, item.ItemData, item.ItemOrders},
 			Idempotent: true,
 		})
 	}
