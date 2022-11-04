@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/gocql/gocql"
+	"github.com/pkg/errors"
 	"log"
 	"os"
 	"time"
@@ -30,21 +31,28 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 	var err error
 
 	deliveryOrderIds := make([]int, 10)
-	b := session.NewBatch(gocql.CounterBatch)
+	b := session.NewBatch(gocql.UnloggedBatch)
 
-	for districtId := 1; districtId <= 10; districtId++ {
-		deliveryOrderId := 0
+	districts := make([]int, 10)
+	for i := 0; i < 10; i++ {
+		districts[i] = i + 1
+	}
 
-		err = session.Query(`SELECT next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).
-			WithContext(ctx).Scan(&deliveryOrderId)
-		if err != nil {
-			log.Printf("Find district error: %v\n", err)
-			return err
+	scanner := session.Query(`SELECT next_order_number, next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id IN ?`, warehouseId, districts).Iter().Scanner()
+	districtId := 1
+	for scanner.Next() {
+		var nextOrder int
+		scanner.Scan(&nextOrder, &deliveryOrderIds[districtId-1])
+		if nextOrder <= deliveryOrderIds[districtId-1] {
+			fmt.Printf("Delivery Transaction: warehouseId: %v, districtId: %v, next order id: %v, next deliveryOrderId: %v\n", warehouseId, districtId, nextOrder, deliveryOrderIds[districtId-1])
+			return errors.Errorf("all orders has been delivered for some districts")
 		}
+		districtId += 1
+	}
 
-		//CAS
+	for i, deliveryOrderId := range deliveryOrderIds {
 		for {
-			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+			applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, i+1, deliveryOrderId).
 				WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
 			if applied && err == nil {
 				deliveryOrderIds[districtId-1] = deliveryOrderId
@@ -54,10 +62,37 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 
 		b.Entries = append(b.Entries, gocql.BatchEntry{
 			Stmt:       "UPDATE cs5424_groupI.orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
-			Args:       []interface{}{carrierId, time.Now(), warehouseId, districtId, deliveryOrderId},
+			Args:       []interface{}{carrierId, time.Now(), warehouseId, i + 1, deliveryOrderId},
 			Idempotent: true,
 		})
 	}
+
+	//for districtId := 1; districtId <= 10; districtId++ {
+	//	deliveryOrderId := 0
+	//
+	//	err = session.Query(`SELECT next_order_number, next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).
+	//		WithContext(ctx).Scan(&deliveryOrderId)
+	//	if err != nil {
+	//		log.Printf("Find district error: %v\n", err)
+	//		return err
+	//	}
+	//
+	//	//CAS
+	//	for {
+	//		applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, districtId, deliveryOrderId).
+	//			WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
+	//		if applied && err == nil {
+	//			deliveryOrderIds[districtId-1] = deliveryOrderId
+	//			break
+	//		}
+	//	}
+	//
+	//	b.Entries = append(b.Entries, gocql.BatchEntry{
+	//		Stmt:       "UPDATE cs5424_groupI.orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
+	//		Args:       []interface{}{carrierId, time.Now(), warehouseId, districtId, deliveryOrderId},
+	//		Idempotent: true,
+	//	})
+	//}
 
 	err = session.ExecuteBatch(b)
 	if err != nil {
@@ -67,34 +102,64 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 	var totalAmountInt int
 	var customerId int
 
-	for i, orderId := range deliveryOrderIds {
-		if err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
-			WithContext(ctx).Scan(&customerId, &totalAmountInt); err != nil {
-			log.Printf("Find order error: %v\n", err)
-			return err
-		}
-
-		if customerId == 0 {
-			fmt.Println(warehouseId)
-			fmt.Println(i + 1)
-			fmt.Println(customerId)
-			fmt.Println(orderId)
-			go func() {
-				key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
-				writeCSV(key, []string{})
-			}()
-		}
-
-		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? 
-                                       WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
-			totalAmountInt, 1, warehouseId, i+1, customerId).
-			WithContext(ctx).Exec(); err != nil {
-			log.Printf("Update customer counter error: %v\n", err)
-			return err
-		}
+	var districtDeliveryOrderIdPairs [][]int
+	districtDeliveryOrderIdPairs = make([][]int, 10)
+	for i, p := range districtDeliveryOrderIdPairs {
+		p = make([]int, 2)
+		p[0] = i + 1
+		p[1] = deliveryOrderIds[i]
 	}
 
-	return nil
+	scanner = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND (district_id,order_id) IN ?`, warehouseId, districtDeliveryOrderIdPairs).
+		WithContext(ctx).Iter().Scanner()
+
+	b = session.NewBatch(gocql.CounterBatch)
+	index := 0
+	for scanner.Next() {
+
+		scanner.Scan(&customerId, &totalAmountInt)
+		if customerId == 0 {
+			continue
+		}
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       "UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+			Args:       []interface{}{carrierId, time.Now(), warehouseId, index + 1, deliveryOrderIds[index]},
+			Idempotent: true,
+		})
+		index += 1
+	}
+
+	err = session.ExecuteBatch(b)
+	return err
+
+	//for i, orderId := range deliveryOrderIds {
+	//	if err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
+	//		WithContext(ctx).Scan(&customerId, &totalAmountInt); err != nil {
+	//		log.Printf("Find order error: %v\n", err)
+	//		return err
+	//	}
+	//
+	//	if customerId == 0 {
+	//		//fmt.Println(warehouseId)
+	//		//fmt.Println(i + 1)
+	//		//fmt.Println(customerId)
+	//		//fmt.Println(orderId)
+	//		//go func() {
+	//		//	key := fmt.Sprintf("%v:%v:%v", warehouseId, i+1, customerId)
+	//		//	writeCSV(key, []string{})
+	//		//}()
+	//		continue
+	//	}
+	//
+	//	if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?
+	//                                   WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
+	//		totalAmountInt, 1, warehouseId, i+1, customerId).
+	//		WithContext(ctx).Exec(); err != nil {
+	//		log.Printf("Update customer counter error: %v\n", err)
+	//		return err
+	//	}
+	//}
+
 }
 
 func writeCSV(key string, output []string) {

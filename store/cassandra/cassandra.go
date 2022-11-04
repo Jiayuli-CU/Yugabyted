@@ -18,20 +18,20 @@ const (
 
 func init() {
 	var err error
-	cluster := gocql.NewCluster("192.168.48.244:9042", "192.168.48.245:9042", "192.168.48.246:9042", "192.168.48.247:9042", "192.168.48.248:9042")
+	//cluster := gocql.NewCluster("192.168.48.244:9042", "192.168.48.245:9042", "192.168.48.246:9042", "192.168.48.247:9042", "192.168.48.248:9042")
 	//cluster.Keyspace = keySpace
-	//cluster := gocql.NewCluster("ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io")
+	cluster := gocql.NewCluster("ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io")
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 	cluster.Authenticator = gocql.PasswordAuthenticator{
-		Username: "yugabyte",
-		Password: "yugabyte",
+		Username: "admin",
+		Password: password,
 	}
-	//cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("ap-southeast-1")
-	//cluster.SslOpts = &gocql.SslOptions{
-	//	CaPath:                 "cassandra_root.crt",
-	//	EnableHostVerification: false,
-	//}
+	cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("ap-southeast-1")
+	cluster.SslOpts = &gocql.SslOptions{
+		CaPath:                 "cassandra_root.crt",
+		EnableHostVerification: false,
+	}
 	cluster.Timeout = time.Minute
 
 	session, err = cluster.CreateSession()
