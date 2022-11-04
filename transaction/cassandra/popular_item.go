@@ -12,14 +12,6 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
 	// find next available order number for (warehouseId, DistrictId)
 	//var nextOrderNumber int
 
-	//GetNextOrderNumberQuery := fmt.Sprintf(`SELECT next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, warehouseId, districtId)
-	//if err := session.Query(GetNextOrderNumberQuery).
-	//	WithContext(ctx).
-	//	Scan(&nextOrderNumber); err != nil {
-	//	log.Printf("Find next order number error when querying district table: %v\n", err)
-	//	return err
-	//}
-
 	// collect the set of itemIds
 	itemIdSetForEachOrder := map[int]map[int]bool{}
 	popularItemIds := map[int]bool{}

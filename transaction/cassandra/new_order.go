@@ -155,18 +155,20 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		},
 	}
 
-	b := session.NewBatch(gocql.UnloggedBatch)
-	for _, itemId := range itemNumbers {
-		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       `UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id = ?`,
-			Args:       []interface{}{itemOrder, itemId},
-			Idempotent: true,
-		})
-	}
-	err = session.ExecuteBatch(b)
-	if err != nil {
-		return err
-	}
+	go func() {
+		b := session.NewBatch(gocql.UnloggedBatch)
+		for _, itemId := range itemNumbers {
+			b.Entries = append(b.Entries, gocql.BatchEntry{
+				Stmt:       `UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id = ?`,
+				Args:       []interface{}{itemOrder, itemId},
+				Idempotent: true,
+			})
+		}
+		err = session.ExecuteBatch(b)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	//UpdateItemOrdersQuery := fmt.Sprintf(`UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id IN ?`, itemOrder, itemNumbers)
 	//if err = session.Query(UpdateItemOrdersQuery).

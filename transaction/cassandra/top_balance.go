@@ -48,7 +48,7 @@ func TopBalanceTransaction(ctx context.Context) error {
 		customerBalanceInfos = append(customerBalanceInfos, orderInfo)
 	}
 
-	sort.Slice(customerBalanceInfos[:], func(i, j int) bool {
+	sort.Slice(customerBalanceInfos, func(i, j int) bool {
 		return customerBalanceInfos[i].Balance > customerBalanceInfos[j].Balance
 	})
 
