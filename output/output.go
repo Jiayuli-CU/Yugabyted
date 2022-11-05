@@ -14,7 +14,7 @@ var session = cassandra.GetSession()
 
 func OutputResult() {
 
-	outputFile("clients")
+	//outputFile("clients")
 
 	var err error
 	var (
@@ -81,11 +81,15 @@ func OutputResult() {
 	}
 
 	orderLineQuantitySum := 0
-	var orderLine cassandra.OrderLine
+	//var orderLine cassandra.OrderLine
+	var orderLines []cassandra.OrderLine
 	scanner := session.Query(`select order_lines from cs5424_groupi.orders`).Iter().Scanner()
 	for scanner.Next() {
-		scanner.Scan(&orderLine)
-		orderLineQuantitySum += orderLine.Quantity
+		scanner.Scan(&orderLines)
+		for _, ol := range orderLines {
+			orderLineQuantitySum += ol.Quantity
+		}
+
 	}
 
 	//outputTitle := []string{
