@@ -24,9 +24,7 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
 	GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders 
                    WHERE warehouse_id = %v AND district_id = %v ORDER BY order_id desc LIMIT %v`,
 		warehouseId, districtId, numOrders)
-	//GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders
-	//                                                                         WHERE warehouse_id = %v AND district_id = %v AND order_id > %v AND order_id < %v`,
-	//	warehouseId, districtId, nextOrderNumber-numOrders-1, nextOrderNumber)
+
 	scanner := session.Query(GetOrdersQuery).Iter().Scanner()
 	for scanner.Next() {
 		var (

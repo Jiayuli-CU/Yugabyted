@@ -170,12 +170,6 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		}
 	}()
 
-	//UpdateItemOrdersQuery := fmt.Sprintf(`UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id IN ?`, itemOrder, itemNumbers)
-	//if err = session.Query(UpdateItemOrdersQuery).
-	//	WithContext(ctx).Exec(); err != nil {
-	//	log.Fatal(err)
-	//}
-
 	output := NewOrderTransactionOutput{
 		TransactionType:  "New Order Transaction",
 		CustomerInfo:     customerInfo,
