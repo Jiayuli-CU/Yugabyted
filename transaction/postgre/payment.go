@@ -43,7 +43,7 @@ func PaymentTransaction(warehouseId, districtId, customerId uint64, payment floa
 		}
 		if err := tx.Model(&models.Warehouse{}).
 			Where("id = ?", warehouseId).
-			Updates(map[string]interface{}{"year_to_date_amount": warehouse.YearToDateAmount + payment}).Error; err != nil {
+			Update("year_to_date_amount", warehouse.YearToDateAmount+payment).Error; err != nil {
 			log.Printf("Update warehouse error: %v\n", err)
 			return err
 		}

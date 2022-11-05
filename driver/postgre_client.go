@@ -30,6 +30,7 @@ func SqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 	var latencies []time.Duration
 	start := time.Now()
 	var info []string
+	runningCount := 0
 	for {
 		line, err := buff.ReadString('\n')
 		if err == io.EOF {
@@ -37,6 +38,8 @@ func SqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 		}
 		executedTransactions += 1
 		info = strings.Split(strings.Replace(line, "\n", "", -1), ",")
+		runningCount++
+		fmt.Printf("Transactions finished: %v\n", runningCount)
 		startTransaction := time.Now()
 		switch info[0] {
 		case "N":
@@ -58,6 +61,7 @@ func SqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 		}
 		latencies = append(latencies, time.Since(startTransaction))
 	}
+	fmt.Println("Transactions finished")
 	totalExecutionTime := time.Since(start)
 	executionSeconds := totalExecutionTime.Seconds()
 	sort.Slice(latencies, func(i, j int) bool {

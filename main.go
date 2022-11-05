@@ -3,24 +3,20 @@ package main
 import (
 	"cs5424project/driver"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 )
 
 func main() {
 
-	var arg1, arg2, arg3, arg4 string
+	args := os.Args
 	var n1, n2, n3, n4 int
 	var err error
-	fmt.Printf("input number: ")
-	_, err = fmt.Scanln(&arg1, &arg2, &arg3, &arg4)
-	if err != nil {
-		fmt.Println("scan user input error")
-	}
-	n1, err = strconv.Atoi(arg1)
-	n2, err = strconv.Atoi(arg2)
-	n3, err = strconv.Atoi(arg3)
-	n4, err = strconv.Atoi(arg4)
+	n1, err = strconv.Atoi(args[0])
+	n2, err = strconv.Atoi(args[1])
+	n3, err = strconv.Atoi(args[2])
+	n4, err = strconv.Atoi(args[3])
 	if err != nil {
 		fmt.Printf("input format error: %v\n", err)
 	}
