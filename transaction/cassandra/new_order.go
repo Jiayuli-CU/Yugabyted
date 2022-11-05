@@ -92,11 +92,16 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 			return err
 		}
 		if stockQuantity < 10 {
-			if err = session.Query(`UPDATE cs5424_groupI.stock_counters SET quantity = quantity + 100 WHERE warehouse_id = ? AND item_id = ?`, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
+			if err = session.Query(`UPDATE cs5424_groupI.stock_counters SET quantity = quantity + ?, total_quantity = total_quantity + ? WHERE warehouse_id = ? AND item_id = ?`, 100, quantity, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
 				log.Printf("Find quantity error: %v\n", err)
 				return err
 			}
 			stockQuantity += 100
+		} else {
+			if err = session.Query(`UPDATE cs5424_groupI.stock_counters SET total_quantity = total_quantity + ? WHERE warehouse_id = ? AND item_id = ?`, quantity, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
+				log.Printf("Find quantity error: %v\n", err)
+				return err
+			}
 		}
 
 		// calculate item and total amount
@@ -127,7 +132,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 			StockQuantity:       stockQuantity,
 		}
 
-		itemInfos = append(itemInfos, itemInfo)
+		itemInfos[idx] = itemInfo
 	}
 
 	entryTime := time.Now()

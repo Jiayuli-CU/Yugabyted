@@ -13,6 +13,7 @@ func OutputResult() {
 	var (
 		warehouseYearToDateAmountInt int
 		districtYearToDateAmountInt  int
+		districtNextOrderSum         int
 		balanceInt                   int
 		customerYearToDateAmountInt  int
 		customerPaymentInt           int
@@ -40,6 +41,7 @@ func OutputResult() {
 		StockYTDQuantity          int
 		OrderCount                int
 		RemoteCount               int
+		OrderLineQuantitySum      int
 	}
 
 	err = session.Query(`select sum(warehouse_year_to_date_payment) from cs5424_groupi.warehouse_counter`).Scan(&warehouseYearToDateAmountInt)
@@ -47,6 +49,10 @@ func OutputResult() {
 		fmt.Println("find warehouse year to date payment error: ", err)
 	}
 	err = session.Query(`select sum(district_year_to_date_payment) from cs5424_groupi.district_counter`).Scan(&districtYearToDateAmountInt)
+	if err != nil {
+		fmt.Println("find district year to date payment error: ", err)
+	}
+	err = session.Query(`select sum(next_order_number) from cs5424_groupi.districts`).Scan(&districtNextOrderSum)
 	if err != nil {
 		fmt.Println("find district year to date payment error: ", err)
 	}
@@ -66,6 +72,14 @@ func OutputResult() {
 		fmt.Println("find stocks error: ", err)
 	}
 
+	orderLineQuantitySum := 0
+	var orderLine cassandra.OrderLine
+	scanner := session.Query(`select order_lines from cs5424_groupi.orders`).Iter().Scanner()
+	for scanner.Next() {
+		scanner.Scan(&orderLine)
+		orderLineQuantitySum += orderLine.Quantity
+	}
+
 	output := Output{
 		WarehouseYearToDateAmount: fmt.Sprintf("%.2f", float64(warehouseYearToDateAmountInt)/100),
 		DistrictYearToDateAmount:  fmt.Sprintf("%.2f", float64(districtYearToDateAmountInt)/100),
@@ -80,6 +94,7 @@ func OutputResult() {
 		OrderLineAmount:           fmt.Sprintf("%.2f", float64(orderLineAmountInt)/100),
 		StockQuantity:             stockQuantity,
 		StockYTDQuantity:          stockYTDQuantity,
+		OrderLineQuantitySum:      orderLineQuantitySum,
 	}
 
 	fmt.Printf("%+v\n", output)
