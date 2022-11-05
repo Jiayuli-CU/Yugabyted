@@ -25,7 +25,7 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
                    WHERE warehouse_id = %v AND district_id = %v ORDER BY order_id desc LIMIT %v`,
 		warehouseId, districtId, numOrders)
 
-	scanner := session.Query(GetOrdersQuery).Iter().Scanner()
+	scanner := session.Query(GetOrdersQuery).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var (
 			_orderId    int
