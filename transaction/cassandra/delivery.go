@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
-	"log"
 	"time"
 )
 
@@ -71,26 +70,26 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 	var totalAmountInt int
 	var customerId int
 
-	for i, orderId := range deliveryOrderIds {
-		if err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, orderId).
-			WithContext(ctx).Scan(&customerId, &totalAmountInt); err != nil {
-			log.Printf("Find order error: %v\n", err)
-			return err
-		}
-
-		if customerId == 0 {
-			continue
-		}
-
-		if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ?
-	                                  WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`,
-			totalAmountInt, 1, warehouseId, i+1, customerId).
-			WithContext(ctx).Exec(); err != nil {
-			log.Printf("Update customer counter error: %v\n", err)
-			return err
-		}
+	districtOrderPairs := make([][]int, 10)
+	for i := 0; i < 10; i++ {
+		districtOrderPairs[i] = []int{i + 1, deliveryOrderIds[i]}
 	}
 
-	return nil
+	scanner = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND (district_id, order_id) IN ?`, warehouseId, deliveryOrderIds).
+		WithContext(ctx).Iter().Scanner()
+	districtId = 1
+	b = session.NewBatch(gocql.CounterBatch)
+	for scanner.Next() {
+		scanner.Scan(&customerId, &totalAmountInt)
+		b.Entries = append(b.Entries, gocql.BatchEntry{
+			Stmt:       "UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+			Args:       []interface{}{totalAmountInt, 1, warehouseId, districtId, customerId},
+			Idempotent: true,
+		})
+		districtId += 1
+	}
+
+	err = session.ExecuteBatch(b)
+	return err
 
 }
