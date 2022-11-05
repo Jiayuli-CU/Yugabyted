@@ -82,7 +82,7 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 		fmt.Sprintf("%v", latency99Percent),
 	}
 
-	writeCSV(fmt.Sprintf("client_output%v", clientNumber), output)
+	WriteCSV(fmt.Sprintf("client_output%v", clientNumber), output)
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
 	fmt.Printf("client %v, total execution time: %v s\n", clientNumber, executionSeconds)
@@ -94,7 +94,7 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 
 }
 
-func writeCSV(path string, output []string) {
+func WriteCSV(path string, output []string) {
 	csvFile, err := os.Create(path)
 	if err != nil {
 		log.Println("fail to open file")

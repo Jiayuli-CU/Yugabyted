@@ -43,7 +43,7 @@ func init() {
 	//defer session.Close()
 
 	// create keyspaces
-	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1};").Exec()
+	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3};").Exec()
 	if err != nil {
 		log.Println(err)
 		return

@@ -2,12 +2,19 @@ package output
 
 import (
 	"cs5424project/store/cassandra"
+	"encoding/csv"
 	"fmt"
+	"log"
+	"os"
+	"sort"
+	"strconv"
 )
 
 var session = cassandra.GetSession()
 
 func OutputResult() {
+
+	outputFile("clients")
 
 	var err error
 	var (
@@ -42,6 +49,7 @@ func OutputResult() {
 		OrderCount                int
 		RemoteCount               int
 		OrderLineQuantitySum      int
+		DistrictNextOrderSum      int
 	}
 
 	err = session.Query(`select sum(warehouse_year_to_date_payment) from cs5424_groupi.warehouse_counter`).Scan(&warehouseYearToDateAmountInt)
@@ -80,6 +88,24 @@ func OutputResult() {
 		orderLineQuantitySum += orderLine.Quantity
 	}
 
+	//outputTitle := []string{
+	//	"sum(W YTD)",
+	//	"sum(D YTD)",
+	//	"sum(D NEXT O ID)",
+	//	"sum(C BALANCE)",
+	//	"sum(C YTD PAYMENT)",
+	//	"sum(C PAYMENT CNT)",
+	//	"sum(, DELIVERY CNT)",
+	//	"max(O ID)",
+	//	"sum(O OL CNT)",
+	//	"sum(OL AMOUNT)",
+	//	"sum(OL QUANTITY)",
+	//	"sum(S QUANTITY)",
+	//	"sum(S YTD)",
+	//	"sum(S ORDER CNT)",
+	//	"sum(S REMOTE CNT)",
+	//}
+
 	output := Output{
 		WarehouseYearToDateAmount: fmt.Sprintf("%.2f", float64(warehouseYearToDateAmountInt)/100),
 		DistrictYearToDateAmount:  fmt.Sprintf("%.2f", float64(districtYearToDateAmountInt)/100),
@@ -95,8 +121,91 @@ func OutputResult() {
 		StockQuantity:             stockQuantity,
 		StockYTDQuantity:          stockYTDQuantity,
 		OrderLineQuantitySum:      orderLineQuantitySum,
+		DistrictNextOrderSum:      districtNextOrderSum,
 	}
+
+	//outputData := []string{
+	//	output.WarehouseYearToDateAmount,
+	//	output.DistrictYearToDateAmount,
+	//	strconv.Itoa(districtNextOrderSum),
+	//	output.Balance,
+	//	output.CustomerYearToDateAmount,
+	//	output.
+	//
+	//}
 
 	fmt.Printf("%+v\n", output)
 
+}
+
+func outputFile(fileName string) {
+
+	var output [][]string
+	throughput := make([]int, 20)
+	output = append(output, []string{
+		//"ClientNumber",
+		"executedTransactions",
+		"executionSeconds",
+		"throughput",
+		"latencyAverage",
+		"latencyMedian",
+		"latency95Percent",
+		"latency99Percent",
+	})
+	for i := 0; i < 20; i++ {
+		file := fmt.Sprintf("client_output%v", i)
+		content := csvReader(file)
+		output = append(output, content)
+		throughput[i], _ = strconv.Atoi(content[2])
+	}
+
+	sort.Slice(throughput, func(i, j int) bool {
+		return throughput[i] < throughput[j]
+	})
+
+	throughputSum := 0
+	for _, t := range throughput {
+		throughputSum += t
+	}
+
+	throughputTitle := []string{
+		"min_throughput",
+		"max_throughput",
+		"avg_throughput",
+	}
+	throughputData := []string{
+		fmt.Sprintf("%v", throughput[0]),
+		fmt.Sprintf("%v", throughput[19]),
+		fmt.Sprintf("%.2f", float32(throughputSum)/20),
+	}
+	throughputOutput := [][]string{
+		throughputTitle,
+		throughputData,
+	}
+	csvWriter("throughput", throughputOutput)
+	csvWriter(fileName, output)
+}
+
+func csvWriter(file string, data [][]string) {
+	csvFile, err := os.Create(file)
+	if err != nil {
+		log.Println("fail to open file")
+	}
+	defer csvFile.Close()
+
+	w := csv.NewWriter(csvFile)
+	w.WriteAll(data)
+	w.Flush()
+}
+
+func csvReader(file string) []string {
+	fs, err := os.Open(file)
+	if err != nil {
+		log.Fatalf("can not open the file, err is %+v", err)
+	}
+	defer fs.Close()
+
+	r := csv.NewReader(fs)
+	content, err := r.ReadAll()
+	return content[0]
 }
