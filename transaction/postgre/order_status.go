@@ -17,7 +17,7 @@ func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
 			log.Printf("Find customer error: %v\n", err)
 			return err
 		}
-		if err := tx.Model(&models.Order{}).Where("customer_id = ? AND warehouse_id = ? AND district_id = ?", customer.Id, customer.WarehouseId, customer.DistrictId).Last(&order).Error; err != nil {
+		if err := tx.Model(&models.Order{}).Where("warehouse_id = ? AND district_id = ? AND customer_id = ?", customer.WarehouseId, customer.DistrictId, customer.Id).Last(&order).Error; err != nil {
 			log.Printf("Last order error: %v\n", err)
 			return err
 		}

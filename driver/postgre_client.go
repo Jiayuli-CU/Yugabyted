@@ -12,10 +12,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-func SqlClient(filepath string, clientNumber int) {
+func SqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
+	if wg != nil {
+		defer wg.Done()
+	}
 	file, err := os.Open(filepath)
 	defer file.Close()
 	if err != nil {
@@ -50,8 +54,7 @@ func SqlClient(filepath string, clientNumber int) {
 		case "T":
 			topBalanceParser()
 		case "R":
-			relatedCustomerParser(info)
-
+			//relatedCustomerParser(info)
 		}
 		latencies = append(latencies, time.Since(startTransaction))
 	}
@@ -92,10 +95,10 @@ func exportTransactionDetails(
 ) error {
 	path := strings.Split(transactionFilePath, "/")
 	transactionFileNumber := strings.Split(path[len(path)-1], ".")[0]
-	outputFilePath := fmt.Sprintf("../output/postgres/%v.json", transactionFileNumber)
+	outputFilePath := fmt.Sprintf("output/postgres/%v.json", transactionFileNumber)
 	outFile, err := os.Create(outputFilePath)
 	if err != nil {
-		log.Printf("Create csv file error: %v\n", err)
+		log.Printf("Create json file error: %v\n", err)
 		return nil
 	}
 	defer outFile.Close()

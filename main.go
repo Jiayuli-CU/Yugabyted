@@ -3,22 +3,35 @@ package main
 import (
 	"cs5424project/driver"
 	"fmt"
+	"strconv"
 	"sync"
 )
 
 func main() {
 
+	var arg1, arg2, arg3, arg4 string
+	var n1, n2, n3, n4 int
+	var err error
+	fmt.Printf("input number: ")
+	_, err = fmt.Scanln(&arg1, &arg2, &arg3, &arg4)
+	if err != nil {
+		fmt.Println("scan user input error")
+	}
+	n1, err = strconv.Atoi(arg1)
+	n2, err = strconv.Atoi(arg2)
+	n3, err = strconv.Atoi(arg3)
+	n4, err = strconv.Atoi(arg4)
+	if err != nil {
+		fmt.Printf("input format error: %v\n", err)
+	}
+
 	var wg sync.WaitGroup
 
-	for i := 0; i < 3; i++ {
-		filepath := fmt.Sprintf("data/xact_files/%v.txt", i)
+	for _, i := range []int{n1, n2, n3, n4} {
 		wg.Add(1)
-		go func(filepath string, clientNumber int) {
-			defer wg.Done()
-			driver.SqlClient(filepath, clientNumber)
-		}(filepath, i)
+		filePath := fmt.Sprintf("data/xact_files/%d.txt", i)
+		go driver.SqlClient(&wg, filePath, i)
 	}
 
 	wg.Wait()
-	fmt.Println("main exit")
 }

@@ -5,31 +5,19 @@ import (
 	"testing"
 )
 
-func Test_LoadWarehouse(t *testing.T) {
-	LoadWarehouse()
-}
-
-func Test_LoadOrder(t *testing.T) {
-	LoadOrder()
-}
-
-func Test_LoadStock(t *testing.T) {
-	LoadStock()
-}
-
-func Test_LoadDistrict(t *testing.T) {
-	LoadDistrict()
-}
-
-func Test_LoadCustomer(t *testing.T) {
-	LoadCustomer()
-}
-
-func Test_LoadItem(t *testing.T) {
-	LoadItem()
-}
-
-func Test_LoadOrderLine(t *testing.T) {
-	err := LoadOrderLine()
+func TestLoadData(t *testing.T) {
+	err := LoadWarehouse()
+	assert.NoError(t, err)
+	err = LoadOrder()
+	assert.NoError(t, err)
+	err = LoadStock()
+	assert.NoError(t, err)
+	err = LoadDistrict()
+	assert.NoError(t, err)
+	err = LoadCustomer()
+	assert.NoError(t, err)
+	err = LoadItem()
+	assert.NoError(t, err)
+	err = LoadOrderLine()
 	assert.NoError(t, err)
 }

@@ -15,10 +15,10 @@ var db = postgre.GetDB()
 
 const batchSize = 1000
 
-func LoadWarehouse() {
+func LoadWarehouse() error {
 	file, err := os.Open("./data_files/warehouse.csv")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
@@ -28,7 +28,7 @@ func LoadWarehouse() {
 	// 通过 readAll 方法返回 csv 文件中的所有内容
 	record, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	warehouses := make([]models.Warehouse, len(record))
@@ -50,12 +50,13 @@ func LoadWarehouse() {
 	}
 
 	err = db.Create(&warehouses).Error
+	return err
 }
 
-func LoadDistrict() {
+func LoadDistrict() error {
 	file, err := os.Open("./data_files/district.csv")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
@@ -65,7 +66,7 @@ func LoadDistrict() {
 	// 通过 readAll 方法返回 csv 文件中的所有内容
 	records, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var districts []models.District
@@ -93,12 +94,13 @@ func LoadDistrict() {
 	}
 
 	err = db.CreateInBatches(&districts, batchSize).Error
+	return err
 }
 
-func LoadCustomer() {
+func LoadCustomer() error {
 	file, err := os.Open("./data_files/customer.csv")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
@@ -106,7 +108,7 @@ func LoadCustomer() {
 	reader.FieldsPerRecord = -1
 	records, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var customers []models.Customer
@@ -150,12 +152,13 @@ func LoadCustomer() {
 	}
 
 	err = db.CreateInBatches(&customers, batchSize).Error
+	return err
 }
 
-func LoadItem() {
+func LoadItem() error {
 	file, err := os.Open("./data_files/item.csv")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
@@ -163,7 +166,7 @@ func LoadItem() {
 	reader.FieldsPerRecord = -1
 	records, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var items []models.Item
@@ -185,12 +188,13 @@ func LoadItem() {
 	}
 
 	err = db.CreateInBatches(&items, batchSize).Error
+	return err
 }
 
-func LoadStock() {
+func LoadStock() error {
 	file, err := os.Open("./data_files/stock.csv")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
@@ -200,7 +204,7 @@ func LoadStock() {
 	// 通过 readAll 方法返回 csv 文件中的所有内容
 	records, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var stocks []models.Stock
@@ -235,15 +239,16 @@ func LoadStock() {
 	}
 
 	err = db.CreateInBatches(&stocks, batchSize).Error
+	return err
 }
 
-func LoadOrder() {
+func LoadOrder() error {
 
 	var err error
 
 	file, err := os.Open("./data_files/order.csv")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
@@ -253,7 +258,7 @@ func LoadOrder() {
 	// 通过 readAll 方法返回 csv 文件中的所有内容
 	record, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	orders := make([]models.Order, len(record))
@@ -290,6 +295,7 @@ func LoadOrder() {
 	}
 	postgre.SetOrderCustomerMap(orderCustomerMap)
 	err = db.CreateInBatches(&orders, batchSize).Error
+	return err
 }
 
 func LoadOrderLine() error {

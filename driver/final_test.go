@@ -6,8 +6,5 @@ import (
 )
 
 func Test(t *testing.T) {
-	filePath := "../data/xact_files"
-	for i := 0; i < 20; i++ {
-		SqlClient(fmt.Sprintf("%v/%v.txt", filePath, i), 0)
-	}
+	SqlClient(nil, fmt.Sprintf("../data/xact_files/2.txt"), 0)
 }

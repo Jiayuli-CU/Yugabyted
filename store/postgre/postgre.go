@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -17,13 +18,24 @@ var (
 )
 
 const (
-	host           = "192.168.48.246"
-	port           = "5433"
-	user           = "cs5424l"
-	password       = "123456"
-	dbname         = "yugabyte2"
-	shardingNumber = 5
+	host                   = "192.168.48.246"
+	port                   = "5433"
+	user                   = "cs5424l"
+	password               = "123456"
+	dbname                 = "yugabyte2"
+	shardingNumber         = 5
+	maxConnectionPoolCount = 500
+	maxConnectionCount     = 2500
 )
+
+//const (
+//	host                   = "localhost"
+//	port                   = "5432"
+//	user                   = "postgres"
+//	password               = "postgres"
+//	dbname                 = "postgres"
+//	shardingNumber         = 5
+//)
 
 func init() {
 	//host = os.Getenv("HOST")
@@ -44,6 +56,9 @@ func init() {
 		log.Fatalf("Fail to connect to postgres db: %v\n", err)
 	}
 	log.Printf("Successfully connected to postgres db\n")
+	conn.SetMaxIdleConns(maxConnectionPoolCount)
+	conn.SetMaxOpenConns(maxConnectionCount)
+	conn.SetConnMaxLifetime(5 * time.Second)
 	//shardingDB(db)
 	//initMigrations(db)
 }
