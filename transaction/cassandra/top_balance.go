@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"sync"
 )
 
 type CustomerBalanceInfo struct {
@@ -20,42 +21,35 @@ func TopBalanceTransaction(ctx context.Context) error {
 		This transaction finds the top-10 customers ranked in descending order of their outstanding balance payments
 	*/
 
-	var customerBalanceInfos []CustomerBalanceInfo
+	wg := &sync.WaitGroup{}
+	top100CustomerBalanceInfos := make([]CustomerBalanceInfo, 100)
 
-	GetAllBalance := `SELECT warehouse_id, district_id, customer_id, balance FROM cs5424_groupI.customer_counters;`
+	for warehouseId := 1; warehouseId <= 10; warehouseId++ {
+		wg.Add(1)
 
-	scanner := session.Query(GetAllBalance).WithContext(ctx).Iter().Scanner()
-	for scanner.Next() {
-		var (
-			_warehouseId int
-			_districtId  int
-			_customerId  int
-			_balance     int
-		)
+		go func(warehouseId int) {
+			defer wg.Done()
 
-		err := scanner.Scan(&_warehouseId, &_districtId, &_customerId, &_balance)
-		if err != nil {
-			log.Fatal(err)
-		}
+			top10PerWarehouse := getTopTenBalancePerWarehouse(ctx, warehouseId)
 
-		orderInfo := CustomerBalanceInfo{
-			WarehouseId: _warehouseId,
-			DistrictId:  _districtId,
-			CustomerId:  _customerId,
-			Balance:     _balance,
-		}
+			for idx, customerBalanceInfo := range top10PerWarehouse {
+				idxIn100 := (warehouseId-1)*10 + idx
+				top100CustomerBalanceInfos[idxIn100] = customerBalanceInfo
+			}
 
-		customerBalanceInfos = append(customerBalanceInfos, orderInfo)
+		}(warehouseId)
 	}
 
-	sort.Slice(customerBalanceInfos, func(i, j int) bool {
-		return customerBalanceInfos[i].Balance > customerBalanceInfos[j].Balance
+	wg.Wait()
+
+	sort.Slice(top100CustomerBalanceInfos, func(i, j int) bool {
+		return top100CustomerBalanceInfos[i].Balance > top100CustomerBalanceInfos[j].Balance
 	})
 
 	var outputs []TopBalanceTransactionOutput
 
 	for i := 0; i < 10; i++ {
-		customerBalanceInfo := customerBalanceInfos[i]
+		customerBalanceInfo := top100CustomerBalanceInfos[i]
 		var (
 			customerBasicInfo  cassandra.CustomerInfo
 			warehouseBasicInfo cassandra.WarehouseBasicInfo
@@ -93,4 +87,38 @@ func TopBalanceTransaction(ctx context.Context) error {
 	println()
 
 	return nil
+}
+
+func getTopTenBalancePerWarehouse(ctx context.Context, warehouseId int) []CustomerBalanceInfo {
+	var customerBalanceInfos []CustomerBalanceInfo
+	GetAllBalancePerWarehouse := fmt.Sprintf(`SELECT warehouse_id, district_id, customer_id, balance FROM cs5424_groupI.customer_counters WHERE warehouse_id = %v`, warehouseId)
+	scanner := session.Query(GetAllBalancePerWarehouse).WithContext(ctx).Iter().Scanner()
+	for scanner.Next() {
+		var (
+			_warehouseId int
+			_districtId  int
+			_customerId  int
+			_balance     int
+		)
+
+		err := scanner.Scan(&_warehouseId, &_districtId, &_customerId, &_balance)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		orderInfo := CustomerBalanceInfo{
+			WarehouseId: _warehouseId,
+			DistrictId:  _districtId,
+			CustomerId:  _customerId,
+			Balance:     _balance,
+		}
+
+		customerBalanceInfos = append(customerBalanceInfos, orderInfo)
+	}
+
+	sort.Slice(customerBalanceInfos, func(i, j int) bool {
+		return customerBalanceInfos[i].Balance > customerBalanceInfos[j].Balance
+	})
+
+	return customerBalanceInfos[:10]
 }

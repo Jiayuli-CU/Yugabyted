@@ -56,7 +56,7 @@ func createSchema() {
 
 	customerQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupi.customers " +
 		"(warehouse_id int, district_id int, customer_id int, basic_info FROZEN<cs5424_groupi.customer_info>, discount_rate float, miscellaneous_data text, last_order_id int, " +
-		"PRIMARY KEY ((warehouse_id, district_id), customer_id));"
+		"PRIMARY KEY ((warehouse_id), district_id, customer_id));"
 	err = session.Query(customerQuery).Exec()
 	if err != nil {
 		log.Println(err)
@@ -65,7 +65,7 @@ func createSchema() {
 
 	customerCounterQuery := "CREATE TABLE IF NOT EXISTS cs5424_groupI.customer_counters " +
 		"(warehouse_id int, district_id int, customer_id int, payment_count counter, delivery_count counter, balance counter, year_to_date_payment counter, " +
-		"PRIMARY KEY ((warehouse_id, district_id), customer_id));"
+		"PRIMARY KEY ((warehouse_id), district_id, customer_id));"
 	err = session.Query(customerCounterQuery).Exec()
 	if err != nil {
 		log.Println(err)
