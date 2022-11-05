@@ -21,38 +21,6 @@ func TopBalanceTransaction(ctx context.Context) error {
 		This transaction finds the top-10 customers ranked in descending order of their outstanding balance payments
 	*/
 
-	//var customerBalanceInfos []CustomerBalanceInfo
-	//
-	//GetAllBalance := `SELECT warehouse_id, district_id, customer_id, balance FROM cs5424_groupI.customer_counters;`
-	//
-	//scanner := session.Query(GetAllBalance).WithContext(ctx).Iter().Scanner()
-	//for scanner.Next() {
-	//	var (
-	//		_warehouseId int
-	//		_districtId  int
-	//		_customerId  int
-	//		_balance     int
-	//	)
-	//
-	//	err := scanner.Scan(&_warehouseId, &_districtId, &_customerId, &_balance)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//
-	//	orderInfo := CustomerBalanceInfo{
-	//		WarehouseId: _warehouseId,
-	//		DistrictId:  _districtId,
-	//		CustomerId:  _customerId,
-	//		Balance:     _balance,
-	//	}
-	//
-	//	customerBalanceInfos = append(customerBalanceInfos, orderInfo)
-	//}
-	//
-	//sort.Slice(customerBalanceInfos, func(i, j int) bool {
-	//	return customerBalanceInfos[i].Balance > customerBalanceInfos[j].Balance
-	//})
-
 	wg := &sync.WaitGroup{}
 	top100CustomerBalanceInfos := make([]CustomerBalanceInfo, 100)
 
