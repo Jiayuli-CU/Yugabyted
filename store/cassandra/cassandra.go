@@ -9,20 +9,13 @@ import (
 
 var session *gocql.Session
 
-//const (
-//	keySpace = "cs5424_groupI"
-//	host1    = "ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io"
-//	host2    = "192.168.48.244:9040"
-//	password = "lZdcAJFv1BlkhUMsiz86dLSV-Z1__h"
-//)
-
 func init() {
 	getArgsAndCreateSession()
 }
 
 func getArgsAndCreateSession() {
 	args := os.Args[1:]
-	ips := args[:5]
+	ips := args[:len(args)-2]
 	username := args[5]
 	password := args[6]
 	createSession(ips, username, password)
@@ -49,33 +42,6 @@ func createSession(ips []string, username, password string) {
 
 	return
 }
-
-//func init() {
-//	var err error
-//	cluster := gocql.NewCluster("192.168.48.244:9042", "192.168.48.245:9042", "192.168.48.246:9042", "192.168.48.247:9042", "192.168.48.248:9042")
-//	cluster.Consistency = gocql.Quorum
-//	cluster.ProtoVersion = 4
-//	cluster.Authenticator = gocql.PasswordAuthenticator{
-//		Username: "yugabyte",
-//		Password: "yugabyte",
-//	}
-//	cluster.Timeout = time.Minute
-//
-//	session, err = cluster.CreateSession()
-//	if err != nil {
-//		panic(err)
-//	} else {
-//		fmt.Println("successfully connected to ycql database")
-//	}
-//	//defer session.Close()
-//
-//	// create keyspaces
-//	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3};").Exec()
-//	if err != nil {
-//		log.Println(err)
-//		return
-//	}
-//}
 
 func GetSession() *gocql.Session {
 	return session

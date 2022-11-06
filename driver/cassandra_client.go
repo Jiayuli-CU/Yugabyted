@@ -5,10 +5,8 @@ import (
 	"context"
 	output2 "cs5424project/output"
 	"cs5424project/transaction/cassandra"
-	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -107,8 +105,7 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 		fmt.Sprintf("%v", latency99Percent),
 	}
 
-	output2.CsvWriter(fmt.Sprintf("client_output%v", clientNumber), [][]string{output})
-	WriteCSV(fmt.Sprintf("client_output%v", clientNumber), output)
+	output2.CsvWriter(fmt.Sprintf("output_files/client_output%v", clientNumber), [][]string{output})
 
 	var latencyInfo [][]string
 	latencyInfo = append(latencyInfo, generateLatencyAnalysis(newOrderLatencies, "New-Order"))
@@ -120,7 +117,7 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 	latencyInfo = append(latencyInfo, generateLatencyAnalysis(topBalanceLatencies, "Top-Balance"))
 	latencyInfo = append(latencyInfo, generateLatencyAnalysis(relatedCustomerLatencies, "Related-Customer"))
 
-	output2.CsvWriter(fmt.Sprintf("client%v_transaction_info", clientNumber), latencyInfo)
+	output2.CsvWriter(fmt.Sprintf("output_files/client%v_transaction_info", clientNumber), latencyInfo)
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
 	fmt.Printf("client %v, total execution time: %v s\n", clientNumber, executionSeconds)
@@ -154,22 +151,6 @@ func generateLatencyAnalysis(latencies []time.Duration, transaction string) []st
 		fmt.Sprintf("%v", latency99Percent),
 	}
 	return output
-}
-
-func WriteCSV(path string, output []string) {
-	csvFile, err := os.Create(path)
-	if err != nil {
-		log.Println("fail to open file")
-	}
-	defer csvFile.Close()
-
-	writer := csv.NewWriter(csvFile)
-	err = writer.Write(output)
-	if err != nil {
-		log.Println(err)
-	}
-
-	writer.Flush()
 }
 
 func newOrderParser(ctx context.Context, info []string, buff *bufio.Reader) {

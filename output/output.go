@@ -14,7 +14,7 @@ var session = cassandra.GetSession()
 
 func OutputResult() {
 
-	outputFile("clients")
+	outputFile("output_files/clients")
 
 	var err error
 	var (
@@ -151,7 +151,7 @@ func OutputResult() {
 		outputData,
 	}
 
-	CsvWriter("dbstate", dbstateOutput)
+	CsvWriter("output_files/dbstate", dbstateOutput)
 	fmt.Printf("%+v\n", output)
 
 }
@@ -171,7 +171,7 @@ func outputFile(fileName string) {
 		"latency99Percent",
 	})
 	for i := 0; i < 20; i++ {
-		file := fmt.Sprintf("client_output%v", i)
+		file := fmt.Sprintf("output_files/client_output%v", i)
 		content := CsvReader(file)
 		output = append(output, content)
 		throughput[i], _ = strconv.Atoi(content[2])
@@ -200,7 +200,7 @@ func outputFile(fileName string) {
 		throughputTitle,
 		throughputData,
 	}
-	CsvWriter("throughput", throughputOutput)
+	CsvWriter("output_files/throughput", throughputOutput)
 	CsvWriter(fileName, output)
 }
 
