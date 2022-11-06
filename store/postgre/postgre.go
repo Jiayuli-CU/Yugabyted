@@ -150,7 +150,7 @@ func generateDSN(host, port, user, password, dbname string) string {
 
 func GetDB(useMigration bool) *gorm.DB {
 	if db == nil {
-		initDB(true)
+		initDB(useMigration)
 	}
 	return db
 }
