@@ -3,9 +3,7 @@ package cassandra
 import (
 	"context"
 	"cs5424project/store/cassandra"
-	"fmt"
 	"github.com/gocql/gocql"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -41,18 +39,22 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 		var nextOrder int
 		scanner.Scan(&nextOrder, &deliveryOrderIds[districtId-1])
 		if nextOrder <= deliveryOrderIds[districtId-1] {
-			fmt.Printf("Delivery Transaction Failed: warehouseId: %v, districtId: %v, next order id: %v, next deliveryOrderId: %v\n", warehouseId, districtId, nextOrder, deliveryOrderIds[districtId-1])
-			return errors.Errorf("all orders has been delivered for some districts")
+			//fmt.Printf("Delivery Transaction Failed: warehouseId: %v, districtId: %v, next order id: %v, next deliveryOrderId: %v\n", warehouseId, districtId, nextOrder, deliveryOrderIds[districtId-1])
+			//return errors.Errorf("all orders has been delivered for some districts")
+			deliveryOrderIds[districtId-1] = 0
 		}
 		districtId += 1
 	}
 
 	for i, deliveryOrderId := range deliveryOrderIds {
+		if deliveryOrderId == 0 {
+			continue
+		}
 		applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, i+1, deliveryOrderId).
 			WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
 		if !applied || err != nil {
-			fmt.Println("Delivery Transaction abort")
-			return errors.Errorf("Delivery Transaction abort")
+			deliveryOrderIds[i] = 0
+			continue
 		}
 
 		b.Entries = append(b.Entries, gocql.BatchEntry{
@@ -70,23 +72,23 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 	var totalAmountInt int
 	var customerId int
 
-	districtOrderPairs := make([][]int, 10)
-	for i := 0; i < 10; i++ {
-		districtOrderPairs[i] = []int{i + 1, deliveryOrderIds[i]}
-	}
-
-	scanner = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND (district_id, order_id) IN ?`, warehouseId, deliveryOrderIds).
-		WithContext(ctx).Iter().Scanner()
-	districtId = 1
 	b = session.NewBatch(gocql.CounterBatch)
-	for scanner.Next() {
-		scanner.Scan(&customerId, &totalAmountInt)
+
+	for i, deliveryOrderId := range deliveryOrderIds {
+		if deliveryOrderId == 0 {
+			continue
+		}
+		err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, deliveryOrderId).
+			WithContext(ctx).Scan(&customerId, &totalAmountInt)
+		if err != nil {
+			return err
+		}
+
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "UPDATE cs5424_groupI.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
-			Args:       []interface{}{totalAmountInt, 1, warehouseId, districtId, customerId},
-			Idempotent: true,
+			Stmt:       "UPDATE cs5424_groupi.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+			Args:       []interface{}{totalAmountInt, 1, warehouseId, i + 1, customerId},
+			Idempotent: false,
 		})
-		districtId += 1
 	}
 
 	err = session.ExecuteBatch(b)
