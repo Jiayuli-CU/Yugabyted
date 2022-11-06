@@ -14,7 +14,7 @@ var session = cassandra.GetSession()
 
 func OutputResult() {
 
-	//outputFile("clients")
+	outputFile("clients")
 
 	var err error
 	var (
@@ -92,23 +92,23 @@ func OutputResult() {
 
 	}
 
-	//outputTitle := []string{
-	//	"sum(W YTD)",
-	//	"sum(D YTD)",
-	//	"sum(D NEXT O ID)",
-	//	"sum(C BALANCE)",
-	//	"sum(C YTD PAYMENT)",
-	//	"sum(C PAYMENT CNT)",
-	//	"sum(, DELIVERY CNT)",
-	//	"max(O ID)",
-	//	"sum(O OL CNT)",
-	//	"sum(OL AMOUNT)",
-	//	"sum(OL QUANTITY)",
-	//	"sum(S QUANTITY)",
-	//	"sum(S YTD)",
-	//	"sum(S ORDER CNT)",
-	//	"sum(S REMOTE CNT)",
-	//}
+	outputTitle := []string{
+		"sum(W_YTD)",
+		"sum(D_YTD)",
+		"sum(D_NEXT_O_ID)",
+		"sum(C_BALANCE)",
+		"sum(C_YTD_PAYMENT)",
+		"sum(C_PAYMENT_CNT)",
+		"sum(DELIVERY_CNT)",
+		"max(O_ID)",
+		"sum(O_OL_CNT)",
+		"sum(OL_AMOUNT)",
+		"sum(OL_QUANTITY)",
+		"sum(S_QUANTITY)",
+		"sum(S_YTD)",
+		"sum(S_ORDER_CNT)",
+		"sum(S_REMOTE_CNT)",
+	}
 
 	output := Output{
 		WarehouseYearToDateAmount: fmt.Sprintf("%.2f", float64(warehouseYearToDateAmountInt)/100),
@@ -128,16 +128,30 @@ func OutputResult() {
 		DistrictNextOrderSum:      districtNextOrderSum,
 	}
 
-	//outputData := []string{
-	//	output.WarehouseYearToDateAmount,
-	//	output.DistrictYearToDateAmount,
-	//	strconv.Itoa(districtNextOrderSum),
-	//	output.Balance,
-	//	output.CustomerYearToDateAmount,
-	//	output.
-	//
-	//}
+	outputData := []string{
+		output.WarehouseYearToDateAmount,
+		output.DistrictYearToDateAmount,
+		strconv.Itoa(districtNextOrderSum),
+		output.Balance,
+		output.CustomerYearToDateAmount,
+		output.CustomerPayment,
+		strconv.Itoa(output.Delivery),
+		strconv.Itoa(maxOrderId),
+		strconv.Itoa(orderLineNumber),
+		output.OrderLineAmount,
+		strconv.Itoa(orderLineQuantitySum),
+		strconv.Itoa(stockQuantity),
+		strconv.Itoa(stockYTDQuantity),
+		strconv.Itoa(orderCount),
+		strconv.Itoa(remoteCount),
+	}
 
+	dbstateOutput := [][]string{
+		outputTitle,
+		outputData,
+	}
+
+	CsvWriter("dbstate", dbstateOutput)
 	fmt.Printf("%+v\n", output)
 
 }

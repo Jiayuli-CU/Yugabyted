@@ -14,8 +14,6 @@ import (
 var session = cassandra.GetSession()
 
 func CqlDataLoader() {
-
-	fmt.Println(session)
 	//cassandra.DropTablesIfExists()
 	cassandra.CreateSchema()
 
