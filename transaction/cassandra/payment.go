@@ -20,13 +20,13 @@ func PaymentTransaction(ctx context.Context, warehouseId, districtId, customerId
 	var discount float32
 	var balanceInt int
 
-	if err = session.Query(`SELECT basic_info, discount_rate FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, warehouseId, districtId, customerId).
+	if err = session.Query(`SELECT basic_info, discount_rate FROM cs5424_groupl.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, warehouseId, districtId, customerId).
 		WithContext(ctx).Scan(&customerBasicInfo, &discount); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
 	}
 
-	if err = session.Query(`SELECT balance FROM cs5424_groupI.customer_counters WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, warehouseId, districtId, customerId).
+	if err = session.Query(`SELECT balance FROM cs5424_groupl.customer_counters WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, warehouseId, districtId, customerId).
 		WithContext(ctx).Scan(&balanceInt); err != nil {
 		log.Printf("Find customer counter error: %v\n", err)
 		return err
@@ -46,26 +46,26 @@ func PaymentTransaction(ctx context.Context, warehouseId, districtId, customerId
 	warehouseAddress := cassandra.WarehouseBasicInfo{}
 	districtInfoAddress := cassandra.DistrictInfo{}
 
-	if err = session.Query(`SELECT district_address, warehouse_address FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ?`, warehouseId, districtId).
+	if err = session.Query(`SELECT district_address, warehouse_address FROM cs5424_groupl.districts WHERE warehouse_id = ? AND district_id = ?`, warehouseId, districtId).
 		WithContext(ctx).Scan(&warehouseAddress, &districtInfoAddress); err != nil {
 		log.Printf("Find district counter error: %v\n", err)
 		return err
 	}
 
-	if err = session.Query(`UPDATE cs5424_groupI.customer_counters SET payment_count = payment_count + ?, balance = balance - ?, year_to_date_payment = year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, 1, paymentInt, paymentInt, warehouseId, districtId, customerId).
+	if err = session.Query(`UPDATE cs5424_groupl.customer_counters SET payment_count = payment_count + ?, balance = balance - ?, year_to_date_payment = year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?`, 1, paymentInt, paymentInt, warehouseId, districtId, customerId).
 		WithContext(ctx).Exec(); err != nil {
 		log.Printf("Update customer counter error: %v\n", err)
 		return err
 	}
 
 	// 2. Update the warehouse C_W_ID by incrementing W_YTD by PAYMENT
-	if err = session.Query(`UPDATE cs5424_groupI.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, paymentInt, warehouseId).
+	if err = session.Query(`UPDATE cs5424_groupl.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, paymentInt, warehouseId).
 		WithContext(ctx).Exec(); err != nil {
 		log.Printf("Update warehouse counter error: %v\n", err)
 		return err
 	}
 
-	if err = session.Query(`UPDATE cs5424_groupI.district_counter SET district_year_to_date_payment = district_year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ?`, paymentInt, warehouseId, districtId).
+	if err = session.Query(`UPDATE cs5424_groupl.district_counter SET district_year_to_date_payment = district_year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ?`, paymentInt, warehouseId, districtId).
 		Exec(); err != nil {
 		log.Printf("Update district counter error: %v\n", err)
 		return err

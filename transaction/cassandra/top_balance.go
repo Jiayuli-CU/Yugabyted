@@ -56,14 +56,14 @@ func TopBalanceTransaction(ctx context.Context) error {
 			districtInfo       cassandra.DistrictInfo
 		)
 
-		GetCustomerInfoQuery := fmt.Sprintf(`SELECT basic_info FROM cs5424_groupI.customers WHERE warehouse_id = %v AND district_id = %v AND customer_id = %v LIMIT 1`, customerBalanceInfo.WarehouseId, customerBalanceInfo.DistrictId, customerBalanceInfo.CustomerId)
+		GetCustomerInfoQuery := fmt.Sprintf(`SELECT basic_info FROM cs5424_groupl.customers WHERE warehouse_id = %v AND district_id = %v AND customer_id = %v LIMIT 1`, customerBalanceInfo.WarehouseId, customerBalanceInfo.DistrictId, customerBalanceInfo.CustomerId)
 		if err := session.Query(GetCustomerInfoQuery).
 			Scan(&customerBasicInfo); err != nil {
 			log.Print(err)
 			return err
 		}
 
-		GetWDQuery := fmt.Sprintf(`SELECT warehouse_address, district_address FROM cs5424_groupI.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, customerBalanceInfo.WarehouseId, customerBalanceInfo.DistrictId)
+		GetWDQuery := fmt.Sprintf(`SELECT warehouse_address, district_address FROM cs5424_groupl.districts WHERE warehouse_id = %v AND district_id = %v LIMIT 1`, customerBalanceInfo.WarehouseId, customerBalanceInfo.DistrictId)
 		if err := session.Query(GetWDQuery).
 			Scan(&warehouseBasicInfo, &districtInfo); err != nil {
 			log.Print(err)
@@ -91,7 +91,7 @@ func TopBalanceTransaction(ctx context.Context) error {
 
 func getTopTenBalancePerWarehouse(ctx context.Context, warehouseId int) []CustomerBalanceInfo {
 	var customerBalanceInfos []CustomerBalanceInfo
-	GetAllBalancePerWarehouse := fmt.Sprintf(`SELECT warehouse_id, district_id, customer_id, balance FROM cs5424_groupI.customer_counters WHERE warehouse_id = %v`, warehouseId)
+	GetAllBalancePerWarehouse := fmt.Sprintf(`SELECT warehouse_id, district_id, customer_id, balance FROM cs5424_groupl.customer_counters WHERE warehouse_id = %v`, warehouseId)
 	scanner := session.Query(GetAllBalancePerWarehouse).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var (

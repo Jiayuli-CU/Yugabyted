@@ -13,7 +13,7 @@ func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockTh
 	// collect the set of itemIds
 	itemIds := map[int]bool{}
 	var orderLinesList [][]cassandra.OrderLine
-	GetOrderLinesListQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupI.orders 
+	GetOrderLinesListQuery := fmt.Sprintf(`SELECT order_lines FROM cs5424_groupl.orders 
                    WHERE warehouse_id = %v AND district_id = %v ORDER BY order_id desc LIMIT %v`,
 		warehouseId, districtId, numOrders)
 	scanner := session.Query(GetOrderLinesListQuery).WithContext(ctx).Iter().Scanner()
@@ -35,7 +35,7 @@ func StockLevelTransaction(ctx context.Context, warehouseId, districtId, stockTh
 		items = append(items, itemId)
 	}
 
-	scanner = session.Query(`SELECT quantity FROM cs5424_groupI.stock_counters WHERE warehouse_id = ? AND item_id IN ?`, warehouseId, items).
+	scanner = session.Query(`SELECT quantity FROM cs5424_groupl.stock_counters WHERE warehouse_id = ? AND item_id IN ?`, warehouseId, items).
 		WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var quantity int

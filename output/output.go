@@ -52,29 +52,29 @@ func OutputResult() {
 		DistrictNextOrderSum      int
 	}
 
-	err = session.Query(`select sum(warehouse_year_to_date_payment) from cs5424_groupi.warehouse_counter`).Scan(&warehouseYearToDateAmountInt)
+	err = session.Query(`select sum(warehouse_year_to_date_payment) from cs5424_groupl.warehouse_counter`).Scan(&warehouseYearToDateAmountInt)
 	if err != nil {
 		fmt.Println("find warehouse year to date payment error: ", err)
 	}
-	err = session.Query(`select sum(district_year_to_date_payment) from cs5424_groupi.district_counter`).Scan(&districtYearToDateAmountInt)
+	err = session.Query(`select sum(district_year_to_date_payment) from cs5424_groupl.district_counter`).Scan(&districtYearToDateAmountInt)
 	if err != nil {
 		fmt.Println("find district year to date payment error: ", err)
 	}
-	err = session.Query(`select sum(next_order_number) from cs5424_groupi.districts`).Scan(&districtNextOrderSum)
+	err = session.Query(`select sum(next_order_number) from cs5424_groupl.districts`).Scan(&districtNextOrderSum)
 	if err != nil {
 		fmt.Println("find district year to date payment error: ", err)
 	}
-	err = session.Query(`select sum(balance), sum(year_to_date_payment), sum(payment_count), sum(delivery_count) from cs5424_groupi.customer_counters`).
+	err = session.Query(`select sum(balance), sum(year_to_date_payment), sum(payment_count), sum(delivery_count) from cs5424_groupl.customer_counters`).
 		Scan(&balanceInt, &customerYearToDateAmountInt, &customerPaymentInt, &delivery)
 	if err != nil {
 		fmt.Println("find customer error: ", err)
 	}
-	err = session.Query(`select max(order_id), sum(items_number), sum(total_amount) from cs5424_groupi.orders`).
+	err = session.Query(`select max(order_id), sum(items_number), sum(total_amount) from cs5424_groupl.orders`).
 		Scan(&maxOrderId, &orderLineNumber, &orderLineAmountInt)
 	if err != nil {
 		fmt.Println("find orders error: ", err)
 	}
-	err = session.Query(`select sum(quantity), sum(total_quantity), sum(order_count), sum(remote_count) from cs5424_groupi.stock_counters`).
+	err = session.Query(`select sum(quantity), sum(total_quantity), sum(order_count), sum(remote_count) from cs5424_groupl.stock_counters`).
 		Scan(&stockQuantity, &stockYTDQuantity, &orderCount, &remoteCount)
 	if err != nil {
 		fmt.Println("find stocks error: ", err)
@@ -83,7 +83,7 @@ func OutputResult() {
 	orderLineQuantitySum := 0
 	//var orderLine cassandra.OrderLine
 	var orderLines []cassandra.OrderLine
-	scanner := session.Query(`select order_lines from cs5424_groupi.orders`).Iter().Scanner()
+	scanner := session.Query(`select order_lines from cs5424_groupl.orders`).Iter().Scanner()
 	for scanner.Next() {
 		scanner.Scan(&orderLines)
 		for _, ol := range orderLines {

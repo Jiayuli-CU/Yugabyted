@@ -52,15 +52,15 @@ func CloseSession() {
 }
 
 func DropTablesIfExists() {
-	dropWarehouse := `drop table  IF EXISTS cs5424_groupi.warehouse_counter`
-	dropDistrict := `drop table  IF EXISTS cs5424_groupi.districts`
-	dropDistrictCounter := `drop table  IF EXISTS cs5424_groupi.district_counter`
-	dropCustomers := `drop table  IF EXISTS cs5424_groupi.customers`
-	dropItems := `drop table  IF EXISTS cs5424_groupi.items`
-	dropOrders := `drop table  IF EXISTS cs5424_groupi.orders`
-	dropStocks := `drop table  IF EXISTS cs5424_groupi.stocks`
-	dropStockCounters := `drop table  IF EXISTS cs5424_groupi.stock_counters`
-	dropCustomerCounters := `drop table  IF EXISTS cs5424_groupi.customer_counters`
+	dropWarehouse := `drop table  IF EXISTS cs5424_groupl.warehouse_counter`
+	dropDistrict := `drop table  IF EXISTS cs5424_groupl.districts`
+	dropDistrictCounter := `drop table  IF EXISTS cs5424_groupl.district_counter`
+	dropCustomers := `drop table  IF EXISTS cs5424_groupl.customers`
+	dropItems := `drop table  IF EXISTS cs5424_groupl.items`
+	dropOrders := `drop table  IF EXISTS cs5424_groupl.orders`
+	dropStocks := `drop table  IF EXISTS cs5424_groupl.stocks`
+	dropStockCounters := `drop table  IF EXISTS cs5424_groupl.stock_counters`
+	dropCustomerCounters := `drop table  IF EXISTS cs5424_groupl.customer_counters`
 
 	err := session.Query(dropWarehouse)
 	if err != nil {

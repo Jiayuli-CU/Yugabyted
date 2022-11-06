@@ -77,7 +77,7 @@ func loadWarehouseCounter(warehouses []cassandra.Warehouse) {
 	var err error
 	for _, warehouse := range warehouses {
 		fmt.Println(warehouse.Id)
-		err = session.Query(`UPDATE cs5424_groupI.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(warehouse.YearToDateAmount*100), warehouse.Id).Exec()
+		err = session.Query(`UPDATE cs5424_groupl.warehouse_counter SET warehouse_year_to_date_payment = warehouse_year_to_date_payment + ? WHERE warehouse_id = ?`, int(warehouse.YearToDateAmount*100), warehouse.Id).Exec()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -143,12 +143,12 @@ func loadDistrictAndCounter(districts [][]cassandra.District, districtsCounter [
 		for d, district := range subDistricts {
 			districtJson, _ := json.Marshal(district)
 			b.Entries = append(b.Entries, gocql.BatchEntry{
-				Stmt:       "INSERT INTO cs5424_groupi.districts JSON ?",
+				Stmt:       "INSERT INTO cs5424_groupl.districts JSON ?",
 				Args:       []interface{}{string(districtJson)},
 				Idempotent: true,
 			})
 			b.Entries = append(b.Entries, gocql.BatchEntry{
-				Stmt:       "UPDATE cs5424_groupi.district_counter SET district_year_to_date_payment = district_year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ?",
+				Stmt:       "UPDATE cs5424_groupl.district_counter SET district_year_to_date_payment = district_year_to_date_payment + ? WHERE warehouse_id = ? AND district_id = ?",
 				Args:       []interface{}{districtsCounter[w][d], district.WarehouseId, district.DistrictId},
 				Idempotent: false,
 			})
@@ -249,12 +249,12 @@ func loadCustomerAndCounter(customers [][][]cassandra.Customer, customerCounters
 				customerJson, _ := json.Marshal(customer)
 				customerCounter := customerCounters[w][d][c]
 				b.Entries = append(b.Entries, gocql.BatchEntry{
-					Stmt:       "INSERT INTO cs5424_groupi.customers JSON ?",
+					Stmt:       "INSERT INTO cs5424_groupl.customers JSON ?",
 					Args:       []interface{}{string(customerJson)},
 					Idempotent: true,
 				})
 				b.Entries = append(b.Entries, gocql.BatchEntry{
-					Stmt: "UPDATE cs5424_groupi.customer_counters SET " +
+					Stmt: "UPDATE cs5424_groupl.customer_counters SET " +
 						"payment_count = payment_count + ?, delivery_count = delivery_count + ?, " +
 						"balance = balance + ?, year_to_date_payment = year_to_date_payment + ? " +
 						"WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
@@ -335,12 +335,12 @@ func loadItem(items []cassandra.Item) {
 		//}
 		//fmt.Println(string(itemJson))
 		//b.Entries = append(b.Entries, gocql.BatchEntry{
-		//	Stmt:       "INSERT INTO cs5424_groupi.items JSON ?",
+		//	Stmt:       "INSERT INTO cs5424_groupl.items JSON ?",
 		//	Args:       []interface{}{string(itemJson)},
 		//	Idempotent: true,
 		//})
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "INSERT INTO cs5424_groupi.items (item_id, item_name, item_price, item_image_identifier, item_data, item_orders) VALUES (?, ?, ?, ?, ?, ?)",
+			Stmt:       "INSERT INTO cs5424_groupl.items (item_id, item_name, item_price, item_image_identifier, item_data, item_orders) VALUES (?, ?, ?, ?, ?, ?)",
 			Args:       []interface{}{item.ItemId, item.ItemName, item.ItemPrice, item.ItemImageIdentifier, item.ItemData, item.ItemOrders},
 			Idempotent: true,
 		})
@@ -494,7 +494,7 @@ func loadOrder(orders [][][]cassandra.Order) {
 					fmt.Printf("Json parser error: %v, w: %v, d: %v, o: %v\n", err, w, d, o)
 				}
 				b.Entries = append(b.Entries, gocql.BatchEntry{
-					Stmt:       "INSERT INTO cs5424_groupi.orders JSON ?",
+					Stmt:       "INSERT INTO cs5424_groupl.orders JSON ?",
 					Args:       []interface{}{string(orderJson)},
 					Idempotent: true,
 				})
@@ -591,13 +591,13 @@ func parseAndLoadStock() {
 				return
 			}
 			b.Entries = append(b.Entries, gocql.BatchEntry{
-				Stmt:       "INSERT INTO cs5424_groupi.stocks JSON ?",
+				Stmt:       "INSERT INTO cs5424_groupl.stocks JSON ?",
 				Args:       []interface{}{string(stockJson)},
 				Idempotent: true,
 			})
 			stockCounter := stockCounters[w][i]
 			b.Entries = append(b.Entries, gocql.BatchEntry{
-				Stmt: "UPDATE cs5424_groupi.stock_counters SET " +
+				Stmt: "UPDATE cs5424_groupl.stock_counters SET " +
 					"order_count = order_count + ?, remote_count = remote_count + ?, quantity = quantity + ?, total_quantity = total_quantity + ? " +
 					"WHERE warehouse_id = ? AND item_id = ?",
 				Args:       []interface{}{stockCounter.OrderCount, stockCounter.RemoteCount, stockCounter.Quantity, stockCounter.TotalQuantity, stockCounter.WarehouseId, stockCounter.ItemId},

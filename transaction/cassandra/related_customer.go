@@ -11,7 +11,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 	var itemIdSets []map[int]bool
 	var orderInfosByCustomer []OrderInfo
 	// find orders of this customer
-	GetOrdersByCustomerQuery := fmt.Sprintf(`SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupI.orders 
+	GetOrdersByCustomerQuery := fmt.Sprintf(`SELECT warehouse_id, district_id, order_id, customer_id, order_lines FROM cs5424_groupl.orders 
                                                         WHERE warehouse_id = %v AND district_id = %v AND customer_id = %v`, warehouseId, districtId, customerId)
 
 	scanner := session.Query(GetOrdersByCustomerQuery).WithContext(ctx).Iter().Scanner()
@@ -66,7 +66,7 @@ func RelatedCustomerTransaction(ctx context.Context, warehouseId, districtId, cu
 	// collect the itemOrders for each item
 	var itemOrdersMap map[int][]cassandra.OrderCustomerPK
 	itemOrdersMap = make(map[int][]cassandra.OrderCustomerPK)
-	scanner = session.Query("SELECT item_id, item_orders FROM cs5424_groupI.items WHERE item_id IN ?", itemIdListByCustomer).
+	scanner = session.Query("SELECT item_id, item_orders FROM cs5424_groupl.items WHERE item_id IN ?", itemIdListByCustomer).
 		WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var (

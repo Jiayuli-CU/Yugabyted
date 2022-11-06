@@ -21,7 +21,7 @@ func PopularItemTransaction(ctx context.Context, warehouseId, districtId, numOrd
 
 	// get all required orders
 	var orderInfos []OrderInfoForPopularItemTransaction
-	GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupI.orders 
+	GetOrdersQuery := fmt.Sprintf(`SELECT order_id, order_lines, entry_time, first_name, middle_name, last_name FROM cs5424_groupl.orders 
                    WHERE warehouse_id = %v AND district_id = %v ORDER BY order_id desc LIMIT %v`,
 		warehouseId, districtId, numOrders)
 

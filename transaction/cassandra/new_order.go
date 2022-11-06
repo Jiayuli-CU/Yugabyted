@@ -26,7 +26,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		}
 	}
 
-	err = session.Query(`SELECT warehouse_tax_rate, district_tax_rate, next_order_number FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).
+	err = session.Query(`SELECT warehouse_tax_rate, district_tax_rate, next_order_number FROM cs5424_groupl.districts WHERE warehouse_id = ? AND district_id = ? LIMIT 1`, warehouseId, districtId).WithContext(ctx).
 		Scan(&warehouseTax, &districtTax, &orderId)
 	if err != nil {
 		log.Printf("Find district error: %v\n", err)
@@ -35,14 +35,14 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 
 	//CAS to handle concurrent read and write
 	for {
-		applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, orderId+1, warehouseId, districtId, orderId).
+		applied, err := session.Query(`UPDATE cs5424_groupl.districts SET next_order_number = ? WHERE warehouse_id = ? AND district_id = ? IF next_order_number = ?`, orderId+1, warehouseId, districtId, orderId).
 			WithContext(ctx).ScanCAS(nil, nil, &orderId)
 		if applied && err == nil {
 			break
 		}
 	}
 
-	if err = session.Query(`SELECT discount_rate, basic_info FROM cs5424_groupI.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
+	if err = session.Query(`SELECT discount_rate, basic_info FROM cs5424_groupl.customers WHERE warehouse_id = ? AND district_id = ? AND customer_id = ? LIMIT 1`, warehouseId, districtId, customerId).
 		WithContext(ctx).Scan(&discount, &customerBasicInfo); err != nil {
 		log.Printf("Find customer error: %v\n", err)
 		return err
@@ -73,9 +73,9 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		b := session.NewBatch(gocql.CounterBatch).WithContext(ctx)
 		var stmt string
 		if wId == warehouseId {
-			stmt = "UPDATE cs5424_groupI.stock_counters SET quantity = quantity - ?, order_count = order_count + 1 WHERE warehouse_id = ? AND item_id = ?"
+			stmt = "UPDATE cs5424_groupl.stock_counters SET quantity = quantity - ?, order_count = order_count + 1 WHERE warehouse_id = ? AND item_id = ?"
 		} else {
-			stmt = "UPDATE cs5424_groupI.stock_counters SET quantity = quantity - ?, order_count = order_count + 1, remote_count = remote_count + 1 WHERE warehouse_id = ? AND item_id = ?"
+			stmt = "UPDATE cs5424_groupl.stock_counters SET quantity = quantity - ?, order_count = order_count + 1, remote_count = remote_count + 1 WHERE warehouse_id = ? AND item_id = ?"
 		}
 		b.Entries = append(b.Entries, gocql.BatchEntry{
 			Stmt:       stmt,
@@ -87,25 +87,25 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 			return err
 		}
 		var stockQuantity int
-		if err = session.Query(`SELECT quantity FROM cs5424_groupI.stock_counters WHERE warehouse_id = ? AND item_id = ?`, warehouseId, itemNumber).WithContext(ctx).Scan(&stockQuantity); err != nil {
+		if err = session.Query(`SELECT quantity FROM cs5424_groupl.stock_counters WHERE warehouse_id = ? AND item_id = ?`, warehouseId, itemNumber).WithContext(ctx).Scan(&stockQuantity); err != nil {
 			log.Printf("Find quantity error: %v\n", err)
 			return err
 		}
 		if stockQuantity < 10 {
-			if err = session.Query(`UPDATE cs5424_groupI.stock_counters SET quantity = quantity + ?, total_quantity = total_quantity + ? WHERE warehouse_id = ? AND item_id = ?`, 100, quantity, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
+			if err = session.Query(`UPDATE cs5424_groupl.stock_counters SET quantity = quantity + ?, total_quantity = total_quantity + ? WHERE warehouse_id = ? AND item_id = ?`, 100, quantity, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
 				log.Printf("Find quantity error: %v\n", err)
 				return err
 			}
 			stockQuantity += 100
 		} else {
-			if err = session.Query(`UPDATE cs5424_groupI.stock_counters SET total_quantity = total_quantity + ? WHERE warehouse_id = ? AND item_id = ?`, quantity, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
+			if err = session.Query(`UPDATE cs5424_groupl.stock_counters SET total_quantity = total_quantity + ? WHERE warehouse_id = ? AND item_id = ?`, quantity, warehouseId, itemNumber).WithContext(ctx).Exec(); err != nil {
 				log.Printf("Find quantity error: %v\n", err)
 				return err
 			}
 		}
 
 		// calculate item and total amount
-		if err = session.Query(`SELECT item_name, item_price FROM cs5424_groupI.items WHERE item_id = ? LIMIT 1`, itemNumber).WithContext(ctx).Scan(&itemName, &itemPrice); err != nil {
+		if err = session.Query(`SELECT item_name, item_price FROM cs5424_groupl.items WHERE item_id = ? LIMIT 1`, itemNumber).WithContext(ctx).Scan(&itemName, &itemPrice); err != nil {
 			log.Printf("Find item error: %v\n", err)
 			return err
 		}
@@ -137,13 +137,13 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 
 	entryTime := time.Now()
 
-	if err = session.Query(`INSERT INTO cs5424_groupI.orders (warehouse_id, district_id, order_id, customer_id, first_name, middle_name, last_name, items_number, all_local, entry_time, order_lines, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	if err = session.Query(`INSERT INTO cs5424_groupl.orders (warehouse_id, district_id, order_id, customer_id, first_name, middle_name, last_name, items_number, all_local, entry_time, order_lines, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		warehouseId, districtId, orderId, customerId, customerBasicInfo.FirstName, customerBasicInfo.MiddleName, customerBasicInfo.LastName, total, local, entryTime, orderLines, totalAmountInt).
 		WithContext(ctx).Exec(); err != nil {
 		log.Fatal(err)
 	}
 
-	if err = session.Query(`UPDATE cs5424_groupI.customers SET last_order_id = ? WHERE warehouse_id =? AND district_id = ? AND customer_id = ?`, orderId, warehouseId, districtId, customerId).
+	if err = session.Query(`UPDATE cs5424_groupl.customers SET last_order_id = ? WHERE warehouse_id =? AND district_id = ? AND customer_id = ?`, orderId, warehouseId, districtId, customerId).
 		WithContext(ctx).Exec(); err != nil {
 		log.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func NewOrder(ctx context.Context, warehouseId, districtId, customerId, total in
 		b := session.NewBatch(gocql.UnloggedBatch)
 		for _, itemId := range itemNumbers {
 			b.Entries = append(b.Entries, gocql.BatchEntry{
-				Stmt:       `UPDATE cs5424_groupI.items SET item_orders = item_orders + ? WHERE item_id = ?`,
+				Stmt:       `UPDATE cs5424_groupl.items SET item_orders = item_orders + ? WHERE item_id = ?`,
 				Args:       []interface{}{itemOrder, itemId},
 				Idempotent: true,
 			})

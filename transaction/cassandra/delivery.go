@@ -33,7 +33,7 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 		districts[i] = i + 1
 	}
 
-	scanner := session.Query(`SELECT next_order_number, next_delivery_order_id FROM cs5424_groupI.districts WHERE warehouse_id = ? AND district_id IN ?`, warehouseId, districts).Iter().Scanner()
+	scanner := session.Query(`SELECT next_order_number, next_delivery_order_id FROM cs5424_groupl.districts WHERE warehouse_id = ? AND district_id IN ?`, warehouseId, districts).Iter().Scanner()
 	districtId := 1
 	for scanner.Next() {
 		var nextOrder int
@@ -50,7 +50,7 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 		if deliveryOrderId == 0 {
 			continue
 		}
-		applied, err := session.Query(`UPDATE cs5424_groupI.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, i+1, deliveryOrderId).
+		applied, err := session.Query(`UPDATE cs5424_groupl.districts SET next_delivery_order_id = ? WHERE warehouse_id = ? AND district_id = ? IF next_delivery_order_id = ?`, deliveryOrderId+1, warehouseId, i+1, deliveryOrderId).
 			WithContext(ctx).ScanCAS(nil, nil, &deliveryOrderId)
 		if !applied || err != nil {
 			deliveryOrderIds[i] = 0
@@ -58,7 +58,7 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 		}
 
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "UPDATE cs5424_groupI.orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
+			Stmt:       "UPDATE cs5424_groupl.orders SET carrier_id = ?, delivery_time = ? WHERE warehouse_id = ? AND district_id = ? AND order_id = ?",
 			Args:       []interface{}{carrierId, time.Now(), warehouseId, i + 1, deliveryOrderId},
 			Idempotent: true,
 		})
@@ -78,14 +78,14 @@ func DeliveryTransaction(ctx context.Context, warehouseId, carrierId int) error 
 		if deliveryOrderId == 0 {
 			continue
 		}
-		err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupI.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, deliveryOrderId).
+		err = session.Query(`SELECT customer_id, total_amount FROM cs5424_groupl.orders WHERE warehouse_id = ? AND district_id = ? AND order_id = ?`, warehouseId, i+1, deliveryOrderId).
 			WithContext(ctx).Scan(&customerId, &totalAmountInt)
 		if err != nil {
 			return err
 		}
 
 		b.Entries = append(b.Entries, gocql.BatchEntry{
-			Stmt:       "UPDATE cs5424_groupi.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
+			Stmt:       "UPDATE cs5424_groupl.customer_counters SET balance = balance + ?, delivery_count = delivery_count + ? WHERE warehouse_id = ? AND district_id = ? AND customer_id = ?",
 			Args:       []interface{}{totalAmountInt, 1, warehouseId, i + 1, customerId},
 			Idempotent: false,
 		})
