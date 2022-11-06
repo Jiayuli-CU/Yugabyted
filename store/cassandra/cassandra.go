@@ -3,19 +3,32 @@ package cassandra
 import (
 	"fmt"
 	"github.com/gocql/gocql"
+	"os"
 	"time"
 )
 
 var session *gocql.Session
 
-const (
-	keySpace = "cs5424_groupI"
-	host1    = "ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io"
-	host2    = "192.168.48.244:9040"
-	password = "lZdcAJFv1BlkhUMsiz86dLSV-Z1__h"
-)
+//const (
+//	keySpace = "cs5424_groupI"
+//	host1    = "ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io"
+//	host2    = "192.168.48.244:9040"
+//	password = "lZdcAJFv1BlkhUMsiz86dLSV-Z1__h"
+//)
 
-func CreateSession(ips []string, username, password string) {
+func init() {
+	getArgsAndCreateSession()
+}
+
+func getArgsAndCreateSession() {
+	args := os.Args[1:]
+	ips := args[:5]
+	username := args[5]
+	password := args[6]
+	createSession(ips, username, password)
+}
+
+func createSession(ips []string, username, password string) {
 	var err error
 	cluster := gocql.NewCluster(ips...)
 	cluster.Consistency = gocql.Quorum

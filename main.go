@@ -4,14 +4,11 @@ import (
 	"cs5424project/driver"
 	"cs5424project/store/cassandra"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
 )
 
 func main() {
-
-	getArgsAndCreateSession()
 
 	defer cassandra.CloseSession()
 
@@ -41,14 +38,6 @@ func main() {
 
 	wg.Wait()
 
-}
-
-func getArgsAndCreateSession() {
-	args := os.Args[1:]
-	ips := args[:5]
-	username := args[5]
-	password := args[6]
-	cassandra.CreateSession(ips, username, password)
 }
 
 func TestTopBalanceTransaction(wg sync.WaitGroup) {

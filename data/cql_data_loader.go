@@ -14,7 +14,9 @@ import (
 var session = cassandra.GetSession()
 
 func CqlDataLoader() {
-	cassandra.DropTablesIfExists()
+
+	fmt.Println(session)
+	//cassandra.DropTablesIfExists()
 	cassandra.CreateSchema()
 
 	warehouses := parseAndLoadWarehouse()
