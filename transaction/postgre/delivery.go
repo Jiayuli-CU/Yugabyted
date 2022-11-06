@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"gorm.io/gorm"
 	"log"
 	"sync"
@@ -9,6 +10,7 @@ import (
 )
 
 func DeliveryTransactionV1(warehouseId, carrierId uint64) error {
+	db := postgre.GetDB(false)
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. For DISTRICT_NO = 1 to 10
 		// 		(a) Let N denote the value of the smallest order number O_ID for district (W_ID,DISTRICT_NO)
@@ -68,6 +70,7 @@ func DeliveryTransactionV1(warehouseId, carrierId uint64) error {
 }
 
 func DeliveryTransaction(warehouseId, carrierId uint64) error {
+	db := postgre.GetDB(false)
 	// 1. For DISTRICT_NO = 1 to 10
 	// 		(a) Let N denote the value of the smallest order number O_ID for district (W_ID,DISTRICT_NO)
 	//			with O_CARRIER_ID = null; i.e.,
@@ -133,6 +136,7 @@ func DeliveryTransaction(warehouseId, carrierId uint64) error {
 }
 
 func DeliveryTransactionV2(warehouseId, carrierId uint64) error {
+	db := postgre.GetDB(false)
 	// 1. For DISTRICT_NO = 1 to 10
 	// 		(a) Let N denote the value of the smallest order number O_ID for district (W_ID,DISTRICT_NO)
 	//			with O_CARRIER_ID = null; i.e.,

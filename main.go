@@ -1,33 +1,29 @@
 package main
 
 import (
-	"cs5424project/driver"
+	"cs5424project/runtime"
 	"fmt"
 	"os"
 	"strconv"
-	"sync"
+	"strings"
 )
 
 func main() {
-
 	args := os.Args
-	var n1, n2, n3, n4 int
-	var err error
-	n1, err = strconv.Atoi(args[0])
-	n2, err = strconv.Atoi(args[1])
-	n3, err = strconv.Atoi(args[2])
-	n4, err = strconv.Atoi(args[3])
-	if err != nil {
-		fmt.Printf("input format error: %v\n", err)
+	if strings.Compare(args[1], "-cf") == 0 {
+		fmt.Println("Setting up db connection configuration...")
+		runtime.Config(args[2], args[3], args[4], args[5], args[6])
+	} else if strings.Compare(args[1], "-ld") == 0 {
+		fmt.Println("Loading all data to database...")
+		runtime.LoadDataToDB()
+	} else if strings.Compare(args[1], "-xs") == 0 {
+		fmt.Println("Starting transactions...")
+		n1, _ := strconv.Atoi(args[2])
+		n2, _ := strconv.Atoi(args[3])
+		n3, _ := strconv.Atoi(args[4])
+		n4, _ := strconv.Atoi(args[5])
+		runtime.StartTransactions(n1, n2, n3, n4)
+	} else {
+		fmt.Println("Wrong function input type! Should be in [-cf, -ld, -xs]")
 	}
-
-	var wg sync.WaitGroup
-
-	for _, i := range []int{n1, n2, n3, n4} {
-		wg.Add(1)
-		filePath := fmt.Sprintf("data/xact_files/%d.txt", i)
-		go driver.SqlClient(&wg, filePath, i)
-	}
-
-	wg.Wait()
 }

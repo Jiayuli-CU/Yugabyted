@@ -8,9 +8,8 @@ import (
 	"time"
 )
 
-var db = postgre.GetDB()
-
 func NewOrderTransaction(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
+	db := postgre.GetDB(false)
 
 	var warehouseTax, districtTax, discount, totalAmount float64
 	var warehouse *models.Warehouse
@@ -164,7 +163,7 @@ func NewOrderTransaction(warehouseId, districtId, customerId, total uint64, item
 }
 
 func NewOrderTransactionV1(warehouseId, districtId, customerId, total uint64, itemNumbers, supplierWarehouses []uint64, quantities []int) error {
-
+	db := postgre.GetDB(false)
 	var warehouseTax, districtTax, discount, totalAmount float64
 	var warehouse *models.Warehouse
 	var customer *models.Customer

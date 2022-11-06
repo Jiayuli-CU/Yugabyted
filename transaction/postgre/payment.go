@@ -2,11 +2,13 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"gorm.io/gorm"
 	"log"
 )
 
 func PaymentTransaction(warehouseId, districtId, customerId uint64, payment float64) error {
+	db := postgre.GetDB(false)
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. Update the customer (C_W_ID, C_D_ID, C_ID) as follows:
 		// 		• Decrement C_BALANCE by PAYMENT

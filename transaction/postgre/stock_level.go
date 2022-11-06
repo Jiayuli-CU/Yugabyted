@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"fmt"
 	"log"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) error {
-
+	db := postgre.GetDB(false)
 	var err error
 	count := 0
 
@@ -58,7 +59,7 @@ func StockLevel(warehouseId, districtId uint64, threshold, orderNumber int) erro
 }
 
 func StockLevel2(warehouseId, districtId uint64, threshold, orderNumber int) error {
-
+	db := postgre.GetDB(false)
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var err error
 

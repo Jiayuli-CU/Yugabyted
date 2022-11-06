@@ -11,12 +11,11 @@ import (
 	"strconv"
 )
 
-var db = postgre.GetDB()
-
 const batchSize = 1000
 
 func LoadWarehouse() error {
-	file, err := os.Open("./data_files/warehouse.csv")
+	db := postgre.GetDB(true)
+	file, err := os.Open("./data/data_files/warehouse.csv")
 	if err != nil {
 		return err
 	}
@@ -54,7 +53,9 @@ func LoadWarehouse() error {
 }
 
 func LoadDistrict() error {
-	file, err := os.Open("./data_files/district.csv")
+	db := postgre.GetDB(true)
+
+	file, err := os.Open("./data/data_files/district.csv")
 	if err != nil {
 		return err
 	}
@@ -98,7 +99,9 @@ func LoadDistrict() error {
 }
 
 func LoadCustomer() error {
-	file, err := os.Open("./data_files/customer.csv")
+	db := postgre.GetDB(true)
+
+	file, err := os.Open("./data/data_files/customer.csv")
 	if err != nil {
 		return err
 	}
@@ -156,7 +159,9 @@ func LoadCustomer() error {
 }
 
 func LoadItem() error {
-	file, err := os.Open("./data_files/item.csv")
+	db := postgre.GetDB(true)
+
+	file, err := os.Open("./data/data_files/item.csv")
 	if err != nil {
 		return err
 	}
@@ -192,7 +197,9 @@ func LoadItem() error {
 }
 
 func LoadStock() error {
-	file, err := os.Open("./data_files/stock.csv")
+	db := postgre.GetDB(true)
+
+	file, err := os.Open("./data/data_files/stock.csv")
 	if err != nil {
 		return err
 	}
@@ -243,10 +250,11 @@ func LoadStock() error {
 }
 
 func LoadOrder() error {
+	db := postgre.GetDB(true)
 
 	var err error
 
-	file, err := os.Open("./data_files/order.csv")
+	file, err := os.Open("./data/data_files/order.csv")
 	if err != nil {
 		return err
 	}
@@ -299,7 +307,9 @@ func LoadOrder() error {
 }
 
 func LoadOrderLine() error {
-	file, err := os.Open("./data_files/order-line.csv")
+	db := postgre.GetDB(true)
+
+	file, err := os.Open("./data/data_files/order-line.csv")
 	if err != nil {
 		panic(err)
 	}

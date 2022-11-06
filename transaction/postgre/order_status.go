@@ -2,11 +2,13 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"gorm.io/gorm"
 	"log"
 )
 
 func OrderStatusTransaction(warehouseId, districtId, customerId uint64) error {
+	db := postgre.GetDB(false)
 	var customer models.Customer
 	var order models.Order
 	var orderLines []models.OrderLine

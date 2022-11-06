@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"gorm.io/gorm"
 	"log"
 	"sync"
@@ -9,6 +10,7 @@ import (
 
 func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) error {
 	var currCustomer models.Customer
+	db := postgre.GetDB(false)
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. Let S be the set of customers who are related to the customer identified by (C_W_ID, C_D_ID,
 		//	  C_ID).
@@ -30,7 +32,7 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) erro
 		return nil
 	})
 
-	currCustomerItemSet, err := getCustomerOrderItemsTransaction(currCustomer)
+	currCustomerItemSet, err := getCustomerOrderItemsTransaction(db, currCustomer)
 	if err == nil {
 		var customers []models.Customer
 		err := db.Transaction(func(tx *gorm.DB) error {
@@ -49,7 +51,7 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) erro
 			wg.Add(1)
 			go func(customer models.Customer) {
 				defer wg.Done()
-				customerItemSet, err := getCustomerOrderItemsTransaction(customer)
+				customerItemSet, err := getCustomerOrderItemsTransaction(db, customer)
 				if err != nil {
 					return
 				}
@@ -71,7 +73,7 @@ func RelatedCustomerTransaction(customerId, warehouseId, districtId uint64) erro
 	return err
 }
 
-func getCustomerOrderItemsTransaction(customer models.Customer) (map[uint64]bool, error) {
+func getCustomerOrderItemsTransaction(db *gorm.DB, customer models.Customer) (map[uint64]bool, error) {
 	var allOrderLines []models.OrderLine
 
 	err := db.Transaction(func(tx *gorm.DB) error {

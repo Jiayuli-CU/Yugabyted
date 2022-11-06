@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"cs5424project/store/models"
+	"cs5424project/store/postgre"
 	"fmt"
 	"log"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
+	db := postgre.GetDB(false)
 	var orders []models.Order
 	var quantities []int
 	var orderLines []models.OrderLine
@@ -88,7 +90,7 @@ func PopularItem(warehouseId, districtId uint64, orderNumber int) error {
 }
 
 func PopularItem2(warehouseId, districtId uint64, orderNumber int) error {
-
+	db := postgre.GetDB(false)
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var err error
 		district := &models.District{
