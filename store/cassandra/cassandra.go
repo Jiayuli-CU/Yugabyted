@@ -3,7 +3,6 @@ package cassandra
 import (
 	"fmt"
 	"github.com/gocql/gocql"
-	"log"
 	"time"
 )
 
@@ -16,22 +15,15 @@ const (
 	password = "lZdcAJFv1BlkhUMsiz86dLSV-Z1__h"
 )
 
-func init() {
+func CreateSession(ips []string, username, password string) {
 	var err error
-	cluster := gocql.NewCluster("192.168.48.244:9042", "192.168.48.245:9042", "192.168.48.246:9042", "192.168.48.247:9042", "192.168.48.248:9042")
-	//cluster.Keyspace = keySpace
-	//cluster := gocql.NewCluster("ap-southeast-1.fbe2e2ee-644d-441a-8bc0-61a134b3f1af.aws.ybdb.io")
+	cluster := gocql.NewCluster(ips...)
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 	cluster.Authenticator = gocql.PasswordAuthenticator{
-		Username: "yugabyte",
-		Password: "yugabyte",
+		Username: username,
+		Password: password,
 	}
-	//cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("ap-southeast-1")
-	//cluster.SslOpts = &gocql.SslOptions{
-	//	CaPath:                 "cassandra_root.crt",
-	//	EnableHostVerification: false,
-	//}
 	cluster.Timeout = time.Minute
 
 	session, err = cluster.CreateSession()
@@ -42,16 +34,35 @@ func init() {
 	}
 	//defer session.Close()
 
-	// create keyspaces
-	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3};").Exec()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	//dropTablesIfExists()
-	//createSchema()
+	return
 }
+
+//func init() {
+//	var err error
+//	cluster := gocql.NewCluster("192.168.48.244:9042", "192.168.48.245:9042", "192.168.48.246:9042", "192.168.48.247:9042", "192.168.48.248:9042")
+//	cluster.Consistency = gocql.Quorum
+//	cluster.ProtoVersion = 4
+//	cluster.Authenticator = gocql.PasswordAuthenticator{
+//		Username: "yugabyte",
+//		Password: "yugabyte",
+//	}
+//	cluster.Timeout = time.Minute
+//
+//	session, err = cluster.CreateSession()
+//	if err != nil {
+//		panic(err)
+//	} else {
+//		fmt.Println("successfully connected to ycql database")
+//	}
+//	//defer session.Close()
+//
+//	// create keyspaces
+//	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3};").Exec()
+//	if err != nil {
+//		log.Println(err)
+//		return
+//	}
+//}
 
 func GetSession() *gocql.Session {
 	return session
@@ -61,7 +72,7 @@ func CloseSession() {
 	session.Close()
 }
 
-func dropTablesIfExists() {
+func DropTablesIfExists() {
 	dropWarehouse := `drop table  IF EXISTS cs5424_groupi.warehouse_counter`
 	dropDistrict := `drop table  IF EXISTS cs5424_groupi.districts`
 	dropDistrictCounter := `drop table  IF EXISTS cs5424_groupi.district_counter`

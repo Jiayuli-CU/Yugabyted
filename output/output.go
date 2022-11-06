@@ -158,7 +158,7 @@ func outputFile(fileName string) {
 	})
 	for i := 0; i < 20; i++ {
 		file := fmt.Sprintf("client_output%v", i)
-		content := csvReader(file)
+		content := CsvReader(file)
 		output = append(output, content)
 		throughput[i], _ = strconv.Atoi(content[2])
 	}
@@ -186,11 +186,11 @@ func outputFile(fileName string) {
 		throughputTitle,
 		throughputData,
 	}
-	csvWriter("throughput", throughputOutput)
-	csvWriter(fileName, output)
+	CsvWriter("throughput", throughputOutput)
+	CsvWriter(fileName, output)
 }
 
-func csvWriter(file string, data [][]string) {
+func CsvWriter(file string, data [][]string) {
 	csvFile, err := os.Create(file)
 	if err != nil {
 		log.Println("fail to open file")
@@ -202,7 +202,7 @@ func csvWriter(file string, data [][]string) {
 	w.Flush()
 }
 
-func csvReader(file string) []string {
+func CsvReader(file string) []string {
 	fs, err := os.Open(file)
 	if err != nil {
 		log.Fatalf("can not open the file, err is %+v", err)

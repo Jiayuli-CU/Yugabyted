@@ -3,6 +3,7 @@ package driver
 import (
 	"bufio"
 	"context"
+	output2 "cs5424project/output"
 	"cs5424project/transaction/cassandra"
 	"encoding/csv"
 	"fmt"
@@ -26,6 +27,14 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 	buff := bufio.NewReader(file)
 	executedTransactions := 0
 	var latencies []time.Duration
+	var newOrderLatencies []time.Duration
+	var paymentLatencies []time.Duration
+	var deliveryLatencies []time.Duration
+	var orderStatusLatencies []time.Duration
+	var stockLevelLatencies []time.Duration
+	var topBalanceLatencies []time.Duration
+	var relatedCustomerLatencies []time.Duration
+	var popularItemLatencies []time.Duration
 	ctx := context.Background()
 	start := time.Now()
 	for {
@@ -37,26 +46,42 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 		line = strings.Replace(line, "\n", "", -1)
 		info := strings.Split(line, ",")
 		startTransaction := time.Now()
+		var latency time.Duration
 		switch info[0] {
 		case "N":
 			newOrderParser(ctx, info, buff)
+			latency = time.Since(startTransaction)
+			newOrderLatencies = append(newOrderLatencies, latency)
 		case "P":
 			paymentParser(ctx, info)
+			latency = time.Since(startTransaction)
+			paymentLatencies = append(paymentLatencies, latency)
 		case "D":
 			deliveryParser(ctx, info)
+			latency = time.Since(startTransaction)
+			deliveryLatencies = append(deliveryLatencies, latency)
 		case "O":
 			orderStatusParser(ctx, info)
+			latency = time.Since(startTransaction)
+			orderStatusLatencies = append(orderStatusLatencies, latency)
 		case "S":
 			stockLevelParser(ctx, info)
+			latency = time.Since(startTransaction)
+			stockLevelLatencies = append(stockLevelLatencies, latency)
 		case "I":
 			popularItemParser(ctx, info)
+			latency = time.Since(startTransaction)
+			popularItemLatencies = append(popularItemLatencies, latency)
 		case "T":
 			topBalanceParser(ctx)
+			latency = time.Since(startTransaction)
+			topBalanceLatencies = append(topBalanceLatencies, latency)
 		case "R":
 			relatedCustomerParser(ctx, info)
-
+			latency = time.Since(startTransaction)
+			relatedCustomerLatencies = append(relatedCustomerLatencies, latency)
 		}
-		latencies = append(latencies, time.Since(startTransaction))
+		latencies = append(latencies, latency)
 	}
 	totalExecutionTime := time.Since(start)
 	executionSeconds := int(totalExecutionTime.Seconds())
@@ -82,7 +107,20 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 		fmt.Sprintf("%v", latency99Percent),
 	}
 
+	output2.CsvWriter(fmt.Sprintf("client_output%v", clientNumber), [][]string{output})
 	WriteCSV(fmt.Sprintf("client_output%v", clientNumber), output)
+
+	var latencyInfo [][]string
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(newOrderLatencies, "New-Order"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(paymentLatencies, "Payment"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(deliveryLatencies, "Delivery"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(orderStatusLatencies, "Order-Status"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(stockLevelLatencies, "Stock-Level"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(popularItemLatencies, "Popular-Item"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(topBalanceLatencies, "Top-Balance"))
+	latencyInfo = append(latencyInfo, generateLatencyAnalysis(relatedCustomerLatencies, "Related-Customer"))
+
+	output2.CsvWriter(fmt.Sprintf("client%v_transaction_info", clientNumber), latencyInfo)
 
 	fmt.Printf("client %v, total number of transactions processed: %v\n", clientNumber, executedTransactions)
 	fmt.Printf("client %v, total execution time: %v s\n", clientNumber, executionSeconds)
@@ -92,6 +130,30 @@ func CqlClient(wg *sync.WaitGroup, filepath string, clientNumber int) {
 	fmt.Printf("client %v, 95th percentile transaction latency: %v ms\n", clientNumber, latency95Percent)
 	fmt.Printf("client %v, 99th percentile transaction latency: %v ms\n", clientNumber, latency99Percent)
 
+}
+
+func generateLatencyAnalysis(latencies []time.Duration, transaction string) []string {
+	sort.Slice(latencies, func(i, j int) bool {
+		return latencies[i] < latencies[j]
+	})
+	var sumLatency int64
+	for _, t := range latencies {
+		sumLatency += t.Milliseconds()
+	}
+	total := len(latencies)
+	latencyAverage := sumLatency / int64(total)
+	latencyMedian := latencies[total/2].Milliseconds()
+	latency95Percent := latencies[int(float32(total)*0.95)].Milliseconds()
+	latency99Percent := latencies[int(float32(total)*0.99)].Milliseconds()
+	output := []string{
+		transaction,
+		strconv.Itoa(total),
+		fmt.Sprintf("%v", latencyAverage),
+		fmt.Sprintf("%v", latencyMedian),
+		fmt.Sprintf("%v", latency95Percent),
+		fmt.Sprintf("%v", latency99Percent),
+	}
+	return output
 }
 
 func WriteCSV(path string, output []string) {

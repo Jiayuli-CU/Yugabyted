@@ -14,6 +14,9 @@ import (
 var session = cassandra.GetSession()
 
 func CqlDataLoader() {
+	cassandra.DropTablesIfExists()
+	cassandra.CreateSchema()
+
 	warehouses := parseAndLoadWarehouse()
 	loadWarehouseCounter(warehouses)
 	districts, districtsCounter := parseDistrictAndCounter(warehouses)

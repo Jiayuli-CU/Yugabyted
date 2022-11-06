@@ -5,9 +5,15 @@ import (
 	"log"
 )
 
-func createSchema() {
+func CreateSchema() {
 
 	var err error
+
+	err = session.Query("CREATE KEYSPACE IF NOT EXISTS cs5424_groupI WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3};").Exec()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	warehouseAddressType := "CREATE TYPE IF NOT EXISTS cs5424_groupI.warehouse_info " +
 		"(name text, street_1 text, street_2 text, city text, state text, zip text);"
